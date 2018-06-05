@@ -3,6 +3,7 @@
 
 # Auto-generated
 .coverage
+htmlcov
 
 # Python-specific
 *.pyc

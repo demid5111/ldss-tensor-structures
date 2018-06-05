@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def kronecker_delta(i,j):
+def kronecker_delta(i, j):
     return 1 if i == j else 0
 
 
@@ -11,9 +11,9 @@ def feed_forward_recursion_matrix(k, dim):
     res = 1
     identity_ref = np.identity(dim)
 
-    for i in range(1,k+1):
+    for i in range(1, k + 1):
         intermediate_res = identity_ref
-        for block_idx in range(1,i):
+        for block_idx in range(1, i):
             intermediate_res = np.tensordot(intermediate_res, identity_ref, axes=0)
 
         res = 1 + intermediate_res

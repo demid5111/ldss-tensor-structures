@@ -1,2 +1,8 @@
+# IDEA
 .idea
+
+# Auto-generated
+.coverage
+
+# Python-specific
 *.pyc

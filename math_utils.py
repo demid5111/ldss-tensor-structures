@@ -22,10 +22,23 @@ def feed_forward_recursion_matrix(k, dim):
 
 
 def multiplied_identity(times, dim):
-    res = np.identity(dim)
-    for block_idx in range(times):
-        res = matrix_multiplication(res, np.identity(dim))
-    return res
+    """
+    Calculates 1_{R} (x) 1_{R} (x) ... (x) 1_{R}
+
+    Not clear if real multiplication should happen, if so:
+
+    >> res = np.identity(dim)
+    >> for block_idx in range(times):
+    >>     res = matrix_multiplication(res, np.identity(dim))
+    >> return res
+
+    :param times: not clear if it is used
+    :param dim: number of elements in the role vector
+    :return: identity matrix of size times x times (p. 312)
+    """
+    # TODO: define what is the dimension of 1^{\otimes d}
+    # why is it x2 for each lower step on (p. 312)
+    return np.identity(times)
 
 
 def matrix_multiplication(matrix_a, matrix_b):
@@ -49,21 +62,40 @@ def matrix_multiplication(matrix_a, matrix_b):
 
     >> c_kron = np.kron(A, B)
 
+    Final decision is to use np.tensordot as we need to keep block structure
+    of intermediate computation results
+
     :param matrix_a: first matrix
     :param matrix_b: second matrix
     :return: multiplication result
     """
-    return np.tensordot(matrix_a, matrix_b, axes=0)
     # return np.kron(matrix_a, matrix_b)
+    return np.tensordot(matrix_a, matrix_b, axes=0)
 
 
-def single_dimension_transfer_weights(level, roles_dim, filler_dim, role_m):
+def single_dimension_transfer_weights(level, filler_dim, role_v):
+    """
+    Calculates weights for applying the role to the given filler that results in shifting it one
+    level down
+
+    :param level: target level (where the filler should appear after the role)
+    :param filler_dim: length of filler vectors
+    :param role_v: vector of the role that is applied to the filler
+    :return: weights matrix
+    """
     filler_m = np.identity(filler_dim)
 
-    identities = multiplied_identity(level, roles_dim)
-    # TODO: eliminate this hard dependency on a role to be a 2-component vector
-    # role_m_t = np.array([[role_m[0]], [role_m[1]]])
+    # (p. 313)
+    # W_{cons0} = I (x) 1_{A} (x) r_{0} is equivalent to
+    # W_{cons0} = 1_{A} (x) I (x) r_{0}
+    identities = multiplied_identity(level, role_v.shape[0])
 
-    filler_role = matrix_multiplication(filler_m, role_m)
+    # transposing is needed, according to the (p. 316)
+    # np.transpose does not work as expected for 1D arrays
+    role_m_t = role_v.reshape(role_v.shape[0], 1)
 
-    return matrix_multiplication(identities, filler_role)
+    # firstly do I (x) r_{0}
+    identity_role = matrix_multiplication(identities, role_m_t)
+
+    # secondly do 1_{A} (x) (I (x) r_{0})
+    return matrix_multiplication(filler_m, identity_role)

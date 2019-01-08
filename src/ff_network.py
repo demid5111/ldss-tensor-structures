@@ -1,0 +1,2 @@
+class FeedForwardNetwork:
+    pass

@@ -3,6 +3,7 @@ from src.layers.ilayer import ILayer
 
 class InputData(ILayer):
     def __init__(self):
+        super().__init__()
         self.input_data = None
         self.output = None
 

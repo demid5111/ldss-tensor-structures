@@ -9,7 +9,6 @@ class FeedForwardNetwork:
         self.output_layers = []
         self.hidden_layers = []
         self.inputs = []
-        self.outputs = []
         self.graph = nx.DiGraph()
         self.counter = 1
 
@@ -47,3 +46,7 @@ class FeedForwardNetwork:
 
         print("using package pygraphviz")
         write_dot(self.graph, "grid.dot")
+
+    def outputs(self):
+        outs = [x for x in self.graph.nodes() if self.graph.out_degree(x) == 0 and self.graph.in_degree(x) >= 1]
+        return [self.graph.nodes[o_id]['layer_ref'].output for o_id in outs]

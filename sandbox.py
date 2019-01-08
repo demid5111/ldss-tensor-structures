@@ -3,7 +3,9 @@ import numpy as np
 from math_utils import feed_forward_recursion_matrix, \
     single_dimension_transfer_weights
 from src.ff_network import FeedForwardNetwork
+from src.layers.activation import Activation
 from src.layers.binding_cell import BindingCell
+from src.layers.eltwise import Eltwise
 from src.layers.input_data import InputData
 
 if __name__ == '__main__':
@@ -44,23 +46,33 @@ if __name__ == '__main__':
     # feed_forward_recursion_matrix(MAXIMUM_TREE_DEPTH, roles_basis[0].shape[0])
 
     net = FeedForwardNetwork()
-    fillers = np.array([[1, 0, 0, 0]])
-    roles = np.array([[0, 0, 0, 1, 0]])
+    fillers = np.array([
+        [1, 0, 0, 0],
+        [0.5, 3, 0, 0],
+        [0.6, 0, 2, 0],
+    ])
+    roles = np.array([
+        [0, 0, 0, 0.1, 0],
+        [0, 0.3, 0, 0, 0],
+        [0, 0, 0.9, 0, 0],
+    ])
 
     b_cell = BindingCell()
     input_fillers = InputData()
     input_roles = InputData()
-    # elt_layer = SomeEltwise()
-    # act_layer = SomeActivation()
+    elt_layer = Eltwise(t='sum')
+    act_layer = Activation(t='ReLU')
 
     net.add_input_layer(input_fillers)
     net.add_input_layer(input_roles)
-    net.add_layer(b_cell, [input_fillers.id, input_roles.id], is_output=True)
+    net.add_layer(b_cell, [input_fillers.id, input_roles.id])
+    net.add_layer(elt_layer, [b_cell.id])
+    net.add_layer(act_layer, [elt_layer.id], is_output=True)
 
-    # net.dump_structure()
+    net.dump_structure()
 
     net.fill_input(input_fillers.id, fillers)
     net.fill_input(input_roles.id, roles)
 
     net.forward()
-    print(net.outputs[0])
+    print(net.outputs()[0])

@@ -4,6 +4,7 @@ from math_utils import feed_forward_recursion_matrix, \
     single_dimension_transfer_weights
 from src.ff_network import FeedForwardNetwork
 from src.layers.binding_cell import BindingCell
+from src.layers.input_data import InputData
 
 if __name__ == '__main__':
     # roles_basis = np.array([
@@ -43,17 +44,23 @@ if __name__ == '__main__':
     # feed_forward_recursion_matrix(MAXIMUM_TREE_DEPTH, roles_basis[0].shape[0])
 
     net = FeedForwardNetwork()
+    fillers = np.array([[1, 0, 0, 0]])
+    roles = np.array([[0, 0, 0, 1, 0]])
 
     b_cell = BindingCell()
-    elt_layer = SomeEltwise()
-    act_layer = SomeActivation()
+    input_fillers = InputData()
+    input_roles = InputData()
+    # elt_layer = SomeEltwise()
+    # act_layer = SomeActivation()
 
-    net.add_input_layer(b_cell)
-    net.add_layer(elt_layer, [b_cell])
-    net.add_layer(act_layer, [elt_layer], is_output=True)
+    net.add_input_layer(input_fillers)
+    net.add_input_layer(input_roles)
+    net.add_layer(b_cell, [input_fillers.id, input_roles.id], is_output=True)
 
-    net.add_input(fillers)
-    net.add_input(roles)
+    # net.dump_structure()
+
+    net.fill_input(input_fillers.id, fillers)
+    net.fill_input(input_roles.id, roles)
 
     net.forward()
-    print(net.outputs()[0])
+    print(net.outputs[0])

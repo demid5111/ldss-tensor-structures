@@ -1,12 +1,23 @@
 import numpy as np
+from keras import optimizers
+from keras.engine import Input
+from keras.layers import Lambda, Permute, Add, Activation
+from keras.models import Model
+import keras.backend as K
 
 from math_utils import feed_forward_recursion_matrix, \
     single_dimension_transfer_weights
 from src.ff_network import FeedForwardNetwork
-from src.layers.activation import Activation
+from src.layers.activation import Activation as ActivationLayer
 from src.layers.binding_cell import BindingCell
 from src.layers.eltwise import Eltwise
 from src.layers.input_data import InputData
+
+
+def mul_vec_on_vec(tensors):
+    res = [tensors[0][i] * tensors[1][i] for i in range(len(fillers))]
+    return res
+
 
 if __name__ == '__main__':
     # roles_basis = np.array([
@@ -45,6 +56,7 @@ if __name__ == '__main__':
     #
     # feed_forward_recursion_matrix(MAXIMUM_TREE_DEPTH, roles_basis[0].shape[0])
 
+    print('Running the local implementation')
     net = FeedForwardNetwork()
     fillers = np.array([
         [1, 0, 0, 0],
@@ -61,7 +73,7 @@ if __name__ == '__main__':
     input_fillers = InputData()
     input_roles = InputData()
     elt_layer = Eltwise(t='sum')
-    act_layer = Activation(t='ReLU')
+    act_layer = ActivationLayer(t='ReLU')
 
     net.add_input_layer(input_fillers)
     net.add_input_layer(input_roles)
@@ -75,4 +87,29 @@ if __name__ == '__main__':
     net.fill_input(input_roles.id, roles)
 
     net.forward()
-    print(net.outputs()[0])
+    local_predictions = net.outputs()[0]
+
+    print('Running the keras implementation')
+    transposer = Permute((2,1))
+    binding_cell = Lambda(mul_vec_on_vec)
+
+    fillers_shape = (*fillers.shape, 1)
+    roles_shape = (*roles.shape, 1)
+
+    input_fillers_layer = Input(shape=fillers_shape[1:], batch_shape=fillers_shape)
+    input_roles_layer = Input(shape=roles_shape[1:], batch_shape=roles_shape)
+
+    transposed_role_layer = transposer(input_roles_layer)
+    binding_tensors_layer = binding_cell([input_fillers_layer, transposed_role_layer])
+
+    summed_bindings = Add()(binding_tensors_layer)
+    activation = Activation('relu')(summed_bindings)
+
+    y = Model(inputs=[input_fillers_layer, input_roles_layer], outputs=activation)
+
+    reshaped_fillers = fillers.reshape(fillers_shape)
+    reshaped_roles = roles.reshape(roles_shape)
+    keras_predictions = y.predict_on_batch([reshaped_fillers, reshaped_roles])
+
+    report = '' if np.allclose(local_predictions, keras_predictions) else 'not '
+    print('Comparing Local and Keras: {}identical'.format(report))

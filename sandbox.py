@@ -56,7 +56,7 @@ if __name__ == '__main__':
     #
     # feed_forward_recursion_matrix(MAXIMUM_TREE_DEPTH, roles_basis[0].shape[0])
 
-    print('Running the local implementation')
+    print('Running the own implementation')
     net = FeedForwardNetwork()
     fillers = np.array([
         [1, 0, 0, 0],
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     net.forward()
     local_predictions = net.outputs()[0]
 
-    print('Running the keras implementation')
+    print('Running the Keras implementation')
     transposer = Permute((2,1))
     binding_cell = Lambda(mul_vec_on_vec)
 
@@ -105,11 +105,12 @@ if __name__ == '__main__':
     summed_bindings = Add()(binding_tensors_layer)
     activation = Activation('relu')(summed_bindings)
 
-    y = Model(inputs=[input_fillers_layer, input_roles_layer], outputs=activation)
-
     reshaped_fillers = fillers.reshape(fillers_shape)
     reshaped_roles = roles.reshape(roles_shape)
-    keras_predictions = y.predict_on_batch([reshaped_fillers, reshaped_roles])
+
+    with K.get_session():
+        y = Model(inputs=[input_fillers_layer, input_roles_layer], outputs=activation)
+        keras_predictions = y.predict_on_batch([reshaped_fillers, reshaped_roles])
 
     report = '' if np.allclose(local_predictions, keras_predictions) else 'not '
-    print('Comparing Local and Keras: {}identical'.format(report))
+    print('Comparing own and Keras models: {}identical'.format(report))

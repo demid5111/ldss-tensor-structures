@@ -4,8 +4,7 @@ from keras.models import Model
 
 
 def mul_vec_on_vec(tensors):
-    res = [tensors[0][i] * tensors[1][i] for i in range(tensors[0].shape[0])]
-    return res
+    return [tensors[0][i] * tensors[1][i] for i in range(tensors[0].shape[0])]
 
 
 def build_encoder_network(input_shapes):
@@ -22,6 +21,6 @@ def build_encoder_network(input_shapes):
     binding_tensors_layer = binding_cell([input_fillers_layer, transposed_role_layer])
 
     summed_bindings = Add()(binding_tensors_layer)
-    activation = Activation('relu')(summed_bindings)
+    # activation = Activation('relu')(summed_bindings)
 
-    return Model(inputs=[input_fillers_layer, input_roles_layer], outputs=activation)
+    return Model(inputs=[input_fillers_layer, input_roles_layer], outputs=summed_bindings)

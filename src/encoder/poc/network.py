@@ -1,3 +1,5 @@
+import numpy as np
+
 from src.encoder.poc.ff_network import FeedForwardNetwork
 from src.encoder.poc.layers.activation import Activation
 from src.encoder.poc.layers.binding_cell import BindingCell
@@ -20,3 +22,21 @@ def build_encoder_network():
     net.add_layer(act_layer, [elt_layer.id], is_output=True)
 
     return net
+
+
+if __name__ == '__main__':
+    fillers = np.array([
+        [1, 0, 0, 0],
+        [0.5, 3, 0, 0],
+        [0.6, 0, 2, 0],
+    ])
+    roles = np.array([
+        [0, 0, 0, 0.1, 0],
+        [0, 0.3, 0, 0, 0],
+        [0, 0, 0.9, 0, 0],
+    ])
+
+    print('Running POC implementation')
+    poc_net = build_encoder_network()
+    poc_net.forward((fillers, roles))
+    local_predictions = poc_net.outputs()[0]

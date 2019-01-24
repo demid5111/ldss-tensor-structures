@@ -1,6 +1,6 @@
 import networkx as nx
 
-from src.layers.ilayer import ILayer
+from src.encoder.poc.layers.ilayer import ILayer
 
 
 class FeedForwardNetwork:
@@ -28,7 +28,8 @@ class FeedForwardNetwork:
     def add_input(self, inp):
         self.inputs.append(inp)
 
-    def forward(self):
+    def forward(self, input_data=()):
+        self.fill_inputs(input_data)
         for layer_id in nx.topological_sort(self.graph):
             parents = self.graph.predecessors(layer_id)
             self.graph.nodes[layer_id]['layer_ref'].forward([self.graph.nodes[p_id]['layer_ref'].output for p_id in parents])
@@ -40,8 +41,11 @@ class FeedForwardNetwork:
     def fill_input(self, id, data):
         self.graph.nodes[id]['layer_ref'].input_data = data
 
+    def fill_inputs(self, data=()):
+        for i in range(len(self.input_layers)):
+            self.fill_input(self.input_layers[i].id, data[i])
+
     def dump_structure(self):
-        import pygraphviz
         from networkx.drawing.nx_agraph import write_dot
 
         print("using package pygraphviz")

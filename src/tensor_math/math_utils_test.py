@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 
-from math_utils import matrix_multiplication
+from src.tensor_math.math_utils import matrix_multiplication
 
 
 class MatrixMultiplicationTest(unittest.TestCase):

@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.layers.ilayer import ILayer
+from src.encoder.poc.layers.ilayer import ILayer
 
 
 class BindingCell(ILayer):

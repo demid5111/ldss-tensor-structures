@@ -5,29 +5,23 @@ from src.encoder.vendor.network import build_encoder_network as keras_encoder_ne
 from src.decoder.vendor.network import build_filler_decoder_network as keras_filler_decoder_network
 
 
-def fill_until_square(not_square_matrix):
-    cols = not_square_matrix.shape[1]
-    rows = not_square_matrix.shape[0]
-    new_rows = np.zeros((cols-rows, cols))
-    res = np.vstack([not_square_matrix, new_rows])
-    for i in range(res.shape[0]):
-        res[i][i] = 1
-    return res
-
-
 if __name__ == '__main__':
     fillers = np.array([
-        [110, 0, 0, 0],
-        [0, 120, 0, 0],
-        [0, 0, 130, 0],
+        [8, 0, 0],
+        [0, 15, 0],
+        [0, 0, 10],
     ])
     roles = np.array([
-        [10, 0, 0, 0, 0],
-        [0, 20, 0, 0, 0],
-        [0, 0, 30, 0, 0],
+        [10, 0, 0],
+        [0, 5, 0],
+        [0, 0, 15],
     ])
-    dim_fillers = fillers.shape[1]
+    number_fillers, dim_fillers = fillers.shape
     number_roles, dim_roles = roles.shape
+
+    assert number_fillers == dim_fillers, 'Fillers should be a quadratic matrix'
+    assert number_roles == dim_fillers, 'Roles should be a quadratic matrix'
+
     tensor_representation_shape = (dim_fillers, dim_roles)
 
     print('Building Keras encoder')
@@ -38,8 +32,7 @@ if __name__ == '__main__':
 
     print('Building Keras decoder')
 
-    quadratized_roles = fill_until_square(roles)
-    dual_roles = np.linalg.inv(quadratized_roles)
+    dual_roles = np.linalg.inv(roles)
 
     tensor_representation_3d_shape = (1, *tensor_representation_shape)
     dual_roles_3d_shape = (1, *roles.shape)
@@ -57,6 +50,9 @@ if __name__ == '__main__':
             reshaped_fillers,
             reshaped_roles
         ])
+
+        print('Structural tensor representation')
+        print(tensor_representation)
 
         print('Running Keras decoder')
 

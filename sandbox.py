@@ -1,38 +1,71 @@
 import numpy as np
 import keras.backend as K
 
-from src.encoder.poc.network import build_encoder_network as poc_encoder_network
 from src.encoder.vendor.network import build_encoder_network as keras_encoder_network
+from src.decoder.vendor.network import build_filler_decoder_network as keras_filler_decoder_network
 
 
 if __name__ == '__main__':
     fillers = np.array([
-        [1, 0, 0, 0],
-        [0.5, 3, 0, 0],
-        [0.6, 0, 2, 0],
+        [8, 0, 0],
+        [0, 15, 0],
+        [0, 0, 10],
     ])
     roles = np.array([
-        [0, 0, 0, 0.1, 0],
-        [0, 0.3, 0, 0, 0],
-        [0, 0, 0.9, 0, 0],
+        [10, 0, 0],
+        [0, 5, 0],
+        [0, 0, 15],
     ])
+    number_fillers, dim_fillers = fillers.shape
+    number_roles, dim_roles = roles.shape
 
-    print('Running POC implementation')
-    poc_net = poc_encoder_network()
-    poc_net.forward((fillers, roles))
-    local_predictions = poc_net.outputs()[0]
+    assert number_fillers == dim_fillers, 'Fillers should be a quadratic matrix'
+    assert number_roles == dim_fillers, 'Roles should be a quadratic matrix'
 
-    print('Running Keras implementation')
+    tensor_representation_shape = (dim_fillers, dim_roles)
+
+    print('Building Keras encoder')
     fillers_shape = (*fillers.shape, 1)
     roles_shape = (*roles.shape, 1)
 
-    reshaped_fillers = fillers.reshape(fillers_shape)
-    reshaped_roles = roles.reshape(roles_shape)
+    keras_encoder = keras_encoder_network(input_shapes=(fillers_shape, roles_shape))
 
-    keras_net = keras_encoder_network(input_shapes=(fillers_shape, roles_shape))
+    print('Building Keras decoder')
+
+    dual_roles = np.linalg.inv(roles)
+
+    tensor_representation_3d_shape = (1, *tensor_representation_shape)
+    dual_roles_3d_shape = (1, *roles.shape)
+
+    input_shapes = (tensor_representation_3d_shape, dual_roles_3d_shape)
+    keras_decoder = keras_filler_decoder_network(input_shapes)
+
     with K.get_session():
-        keras_predictions = keras_net.predict_on_batch([reshaped_fillers, reshaped_roles])
+        print('Running Keras encoder')
 
-    report = '' if np.allclose(local_predictions, keras_predictions) else 'not '
+        reshaped_fillers = fillers.reshape(fillers_shape)
+        reshaped_roles = roles.reshape(roles_shape)
 
-    print('Comparing own and Keras models: {}identical'.format(report))
+        tensor_representation = keras_encoder.predict_on_batch([
+            reshaped_fillers,
+            reshaped_roles
+        ])
+
+        print('Structural tensor representation')
+        print(tensor_representation)
+
+        print('Running Keras decoder')
+
+        reshaped_tensor_representation = tensor_representation.reshape(tensor_representation_3d_shape)
+        reshaped_dual_roles = dual_roles[:number_roles].reshape(dual_roles_3d_shape)
+
+        fillers_restored = keras_decoder.predict_on_batch([
+            reshaped_tensor_representation,
+            reshaped_dual_roles
+        ])
+
+    for i, filler in enumerate(fillers_restored):
+        print('Original: '
+              '\n\t[role]({}) with \t\t\t\t[filler]({}). '
+              '\n\tDecoded: with [dual role]({})\t\t\t[filler]({})'
+              .format(roles[i], fillers[i], dual_roles[i], filler))

@@ -7,6 +7,10 @@ def mul_vec_on_vec(tensors):
     return [tensors[0][i] * tensors[1][i] for i in range(tensors[0].shape[0])]
 
 
+def prepare_shapes(filler_vectors, roles_vectors):
+    return (*filler_vectors.shape, 1), (*roles_vectors.shape, 1)
+
+
 def build_encoder_network(input_shapes):
     transposer = Permute((2, 1))
     binding_cell = Lambda(mul_vec_on_vec)

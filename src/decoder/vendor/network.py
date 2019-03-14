@@ -14,6 +14,11 @@ def mat_transpose(matrix):
     return K.permute_dimensions(matrix, (1,0))
 
 
+def prepare_shapes(mapping, dual_roles):
+    number_roles = len(list(mapping.values()))
+    return 1, number_roles, dual_roles.shape[1]
+
+
 def build_filler_decoder_network(input_shapes):
     transposer = Permute((2, 1))
     transposer_matrix = Lambda(mat_transpose)

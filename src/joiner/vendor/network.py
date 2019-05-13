@@ -3,49 +3,12 @@ from functools import reduce
 import numpy as np
 
 from keras.engine import Input
-from keras.layers import Lambda, Flatten, Add, concatenate
+from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
 from keras.models import Model
 
-# from src.decoder.vendor.network import mat_mul
-
 from keras import backend as K
-from keras.layers import Layer
 
 from src.decoder.vendor.network import mat_transpose
-
-
-class ShiftMatrixCreatorLayer(Layer):
-    def __init__(self, max_depth, filler_size, **kwargs):
-        self.max_depth = max_depth
-        self.filler_size = filler_size
-
-        super(ShiftMatrixCreatorLayer, self).__init__(**kwargs)
-
-    def build(self, input_shape):
-        # assert isinstance(input_shape, list)
-        # Create a trainable weight variable for this layer.
-        self.kernel = self.add_weight(name='kernel',
-                                      shape=(input_shape[0], 15),
-                                      initializer='uniform',
-                                      trainable=True)
-        super(ShiftMatrixCreatorLayer, self).build(input_shape)  # Be sure to call this at the end
-
-    def call(self, x):
-        # assert isinstance(x, list)
-        # a, b = x
-        # return [K.dot(a, self.kernel) + b, K.mean(b, axis=-1)]
-        return x
-
-    def compute_output_shape(self, input_shape):
-        # assert isinstance(input_shape, list)
-        shape_a, shape_b = input_shape
-        role_len = input_shape[0]
-        num_cols = reduce(lambda acc, depth: acc + (self.filler_size * (2 ** depth)), range(self.max_depth), 0)
-        # num_cols = 0
-        # for depth in range(self.max_depth):
-        #     num_cols += (self.filler_size * (2 ** depth))
-        num_rows = num_cols * role_len  # + 1 no row for magic epsilon (p. 315) - is it a root?
-        return [(num_rows, num_cols)]
 
 
 def mat_mul(tensors):
@@ -55,13 +18,16 @@ def mat_mul(tensors):
 def filler_input_subgraph(fillers_shapes, shift_layer):
     subtree_as_inputs = []
     for shape in fillers_shapes:
-        if len(shape) < 2:
-            bath_shape = (1, 1, *shape)
-        else:
-            bath_shape = (1, *shape)
-        i = Input(shape=shape, batch_shape=bath_shape)
+        i = Input(shape=(*shape[1:],), batch_shape=(*shape,))
         subtree_as_inputs.append(i)
-    flatten_layers = [Flatten()(input_layer) for input_layer in subtree_as_inputs]
+    reshape_zero_level = Reshape((1,1,*fillers_shapes[0]))(subtree_as_inputs[0])
+    reshape_first_level = Reshape((1,*fillers_shapes[1]))(subtree_as_inputs[1])
+    inputs_before_flattens = [
+        reshape_zero_level,
+        reshape_first_level,
+        *subtree_as_inputs[2:]
+    ]
+    flatten_layers = [Flatten()(input_layer) for input_layer in inputs_before_flattens]
     concat_layer = concatenate(flatten_layers)
     transpose_layer = Lambda(mat_transpose)(concat_layer)
     return subtree_as_inputs, Lambda(mat_mul)([
@@ -70,75 +36,53 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     ])
 
 
-# def shift_matrix(role, max_depth):
-#     """
-#     Builds the W_{cons0} matrix
-#     :param max_depth: maximum depth of the resulting tree
-#     :return: W_{cons0} matrix
-#     """
-#     print('Building W_{cons0} matrix')
-#     role_len = role.shape[0].value
-#
-#     # constructing I (identity matrix of the given depth)
-#     num_cols = reduce(lambda x, y: x + 2 ** y, range(max_depth+1), 0)
-#     num_rows = num_cols * role_len  # + 1 no row for magic epsilon (p. 315) - is it a root?
-#     res_matrix = np.identity(num_cols)
-#     multiplied_matrix = np.multiply(res_matrix, role)
-#     # multiplied_matrix = res_matrix * role
-#     # return multiplied_matrix.reshape((num_rows, num_cols))
-#     # return multiplied_matrix
-#
-#     # res_matrix = np.zeros((num_rows, num_cols))
-#     # for row_index, col_index in zip(range(1, num_rows - role_len + 1, role_len), range(num_cols)):
-#     #     res_matrix[row_index:row_index + role_len, col_index] = role
-#     # return res_matrix
-#
-#     ones = np.zeros((num_cols,num_cols,role_len,1))
-#     for i_row, rows in enumerate(ones):
-#         for i_col, cols in enumerate(rows):
-#             if i_col != i_row:
-#                 continue
-#             ones[i_row][i_col] = np.ones((role_len, 1))
-#
-#     return K.T.tensordot(res_matrix, role, axes=0)
-#     # return ones * multiplied_matrix
+def constant_input(role, filler_len, max_depth, name):
+    np_constant = shift_matrix(role, filler_len, max_depth, name)
+    tf_constant = K.constant(np_constant)
+    return Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32', name=name)
 
 
-
-def build_tree_joiner_network(roles_shape, fillers_shapes):
+def shift_matrix(role, filler_size, max_depth, name):
     """
-    Building the following network:
-    roles  input(level 0) input(level 1) input(level 2) ... input(level 0) input(level 1) input(level 2)
-    |       |               |               |                   |           |               |
-    matrix  flatten         flatten         flatten         flatten         flatten         flatten
-    creator \                 |             |                   \           |               |
-    (cons0) \                 |             |                    \          |               |
-    \                concatenate                                        concatenate
-    \                   |                  (matrix creator cons1)\                   |
-            matmul                                                      matmul
-                \                                                   /
-                                    sum
+    Builds the W_{cons0} matrix
+    :param max_depth: maximum depth of the resulting tree
+    :return: W_{cons0} matrix
+    """
+    print('Building {} matrix'.format(name))
+    role_len = role.shape[0]
+
+    # constructing I (identity matrix of the given depth)
+    num_cols = reduce(lambda acc, depth: acc + (filler_size * (2 ** depth)), range(max_depth), 0)
+    num_rows = num_cols * role_len  # + 1 no row for magic epsilon (p. 315) - is it a root?
+
+    res_matrix = np.zeros((num_rows, num_cols))
+    for row_index, col_index in zip(range(0, num_rows - role_len + 1, role_len), range(num_cols)):
+        res_matrix[row_index:row_index + role_len, col_index] = role
+    return res_matrix
+
+
+def build_tree_joiner_network(roles, fillers_shapes):
+    """
+    Building the following network.
+
+    Draw it with instructions from README.md
+
+    >>> from keras.utils import plot_model
+    >>> keras_joiner = None # some place in the main code after this function is called
+    >>> plot_model(keras_joiner, to_file='keras_joiner.png')
 
     :param roles_shape:
     :param fillers_shapes:
     :return:
     """
-    num_roles, role_len = roles_shape
-    filler_len = fillers_shapes[0][0]
-    num_roles = roles_shape[0]
+    filler_len = fillers_shapes[0][1]
     max_depth = len(fillers_shapes)
 
-    role_input = Input(shape=roles_shape[1:],
-                       batch_shape=roles_shape)
-    role_left, role_right = Lambda(lambda x: K.tf.split(x, num_or_size_splits=num_roles, axis=0))(role_input)
-    print('0:', role_left.shape)  # 0: (?, 1024, 1)
-    print('1:', role_right.shape)  # 1: (?, 1024, 1)
+    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)')
+    left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
 
-    shift_left_layer = ShiftMatrixCreatorLayer(max_depth, filler_len)(role_left)
-    left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, shift_left_layer)
-
-    shift_right_layer = ShiftMatrixCreatorLayer(max_depth, filler_len)(role_right)
-    right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, shift_right_layer)
+    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)')
+    right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, right_shift_input)
 
     sum_layer = Add()([
         left_matmul_layer,
@@ -147,7 +91,8 @@ def build_tree_joiner_network(roles_shape, fillers_shapes):
 
     return Model(
         inputs=[
-            role_input,
+            left_shift_input,
+            right_shift_input,
             *left_inputs,
             *right_inputs
         ],

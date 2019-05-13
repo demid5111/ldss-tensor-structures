@@ -13,6 +13,11 @@
 pip3 install -r requirements.txt
 ```
 
+2. (Optionally]) Install graphviz:
+    1. macOS:
+        - `brew install graphviz`
+        - `export PATH=/usr/local/bin/dot:$PATH`
+
 ## Running tests
 
 1. Without a coverage:

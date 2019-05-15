@@ -1,5 +1,5 @@
 from keras.engine import Input
-from keras.layers import Lambda, Permute, Add, Activation
+from keras.layers import Lambda, Permute, Add
 from keras.models import Model
 
 

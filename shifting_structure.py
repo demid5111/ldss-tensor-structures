@@ -69,10 +69,9 @@ if __name__ == '__main__':
     A (left-child-of-root)
     """
     fillers_case_1 = np.array([
-        [8, 0, 0, 0],  # A
-        [0, 15, 0, 0],  # B
-        [0, 0, 10, 0],  # C
-        [0, 0, 0, 3],  # D
+        [8, 0, 0],  # A
+        [0, 15, 0],  # B
+        [0, 0, 10],  # C
     ])
     roles_case_1 = np.array([
         [10, 0],  # r_0
@@ -220,8 +219,8 @@ if __name__ == '__main__':
                                                               SINGLE_FILLER_SHAPE)
 
     fillers_joined_fourth_case_complex_c = keras_joiner.predict_on_batch([
-        *prepared_for_shift_C_x_r_0,
-        *right_subtree_placeholder
+        *right_subtree_placeholder,
+        *prepared_for_shift_C_x_r_0
     ])
 
     tensor_repr_C_x_r_0_x_r_1 = extract_per_level_tensor_representation(fillers_joined_fourth_case_complex_c,

@@ -36,8 +36,8 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     ])
 
 
-def constant_input(role, filler_len, max_depth, name):
-    np_constant = shift_matrix(role, filler_len, max_depth, name)
+def constant_input(role, filler_len, max_depth, name, matrix_creator):
+    np_constant = matrix_creator(role, filler_len, max_depth, name)
     tf_constant = K.constant(np_constant)
     return Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32', name=name)
 
@@ -78,10 +78,10 @@ def build_tree_joiner_network(roles, fillers_shapes):
     filler_len = fillers_shapes[0][1]
     max_depth = len(fillers_shapes)
 
-    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)')
+    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)', shift_matrix)
     left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
 
-    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)')
+    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)', shift_matrix)
     right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, right_shift_input)
 
     sum_layer = Add()([

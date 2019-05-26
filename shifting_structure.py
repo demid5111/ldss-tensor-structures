@@ -56,18 +56,18 @@ def sum_tensors(left, right):
     return [l+r for l,r in zip(left, right)]
 
 
-if __name__ == '__main__':
+def main():
     """
-    First use case for the structure that should be shifted left
+        First use case for the structure that should be shifted left
 
-    Starting from:
-    root
-    
-    We want to get:
-    root
-    |
-    A (left-child-of-root)
-    """
+        Starting from:
+        root
+
+        We want to get:
+        root
+        |
+        A (left-child-of-root)
+        """
     fillers_case_1 = np.array([
         [8, 0, 0],  # A
         [0, 15, 0],  # B
@@ -77,12 +77,7 @@ if __name__ == '__main__':
         [10, 0],  # r_0
         [0, 5],  # r_1
     ])
-    mapping_case_2 = {
-        'A': [0, 0]
-    }
-    order_case_2 = ['A', ]
-    dual_basic_roles_case_1 = np.linalg.inv(roles_case_1)
-    final_dual_roles = pre_process_roles(dual_basic_roles_case_1, mapping_case_2, order_case_2)
+
     MAX_TREE_DEPTH = 2
     SINGLE_ROLE_SHAPE = roles_case_1[0].shape
     SINGLE_FILLER_SHAPE = fillers_case_1[0].shape
@@ -101,7 +96,7 @@ if __name__ == '__main__':
         *left_subtree_placeholder,
         *right_subtree_placeholder
     ])
-    print('calculated cons (A _x_ r_0')
+    print('calculated cons (A _x_ r_0)')
 
     """
     Second use case for the structure that should be shifted left
@@ -137,7 +132,7 @@ if __name__ == '__main__':
         *prepared_for_shift,
         *right_subtree_placeholder
     ])
-    print('calculated cons (A _x_ r_0 _x_ r_0')
+    print('calculated cons (A _x_ r_0 _x_ r_0)')
 
     tensor_repr_A_x_r_0_x_r_0 = extract_per_level_tensor_representation(fillers_joined_second_case,
                                                                         max_tree_depth=MAX_TREE_DEPTH,
@@ -198,35 +193,40 @@ if __name__ == '__main__':
     """
 
     left_subtree_placeholder = generate_input_placeholder(fillers_shapes)
-    left_subtree_placeholder[0] = fillers_case_1[2].reshape(1, *SINGLE_FILLER_SHAPE)
     right_subtree_placeholder = generate_input_placeholder(fillers_shapes)
+    right_subtree_placeholder[0] = fillers_case_1[2].reshape(1, *SINGLE_FILLER_SHAPE)
 
     fillers_joined_fourth_case_simple_c = keras_joiner.predict_on_batch([
         *left_subtree_placeholder,
         *right_subtree_placeholder
     ])
 
-    tensor_repr_C_x_r_0 = extract_per_level_tensor_representation(fillers_joined_fourth_case_simple_c,
+    tensor_repr_C_x_r_1 = extract_per_level_tensor_representation(fillers_joined_fourth_case_simple_c,
                                                                   max_tree_depth=MAX_TREE_DEPTH,
                                                                   role_shape=SINGLE_ROLE_SHAPE,
                                                                   filler_shape=SINGLE_FILLER_SHAPE)
 
     right_subtree_placeholder = generate_input_placeholder(fillers_shapes)
 
-    prepared_for_shift_C_x_r_0 = reshape_to_satisfy_max_depth(tensor_repr_C_x_r_0,
+    prepared_for_shift_C_x_r_1 = reshape_to_satisfy_max_depth(tensor_repr_C_x_r_1,
                                                               MAX_TREE_DEPTH,
                                                               SINGLE_ROLE_SHAPE,
                                                               SINGLE_FILLER_SHAPE)
 
     fillers_joined_fourth_case_complex_c = keras_joiner.predict_on_batch([
+        *prepared_for_shift_C_x_r_1,
         *right_subtree_placeholder,
-        *prepared_for_shift_C_x_r_0
     ])
 
-    tensor_repr_C_x_r_0_x_r_1 = extract_per_level_tensor_representation(fillers_joined_fourth_case_complex_c,
+    tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation(fillers_joined_fourth_case_complex_c,
                                                                         max_tree_depth=MAX_TREE_DEPTH,
                                                                         role_shape=SINGLE_ROLE_SHAPE,
                                                                         filler_shape=SINGLE_FILLER_SHAPE)
 
-    tree_representation = sum_tensors(tensor_repr_C_x_r_0_x_r_1,tensor_repr_A_x_r_0_x_r_0_B_x_r_1)
+    tree_representation = sum_tensors(tensor_repr_C_x_r_1_x_r_0, tensor_repr_A_x_r_0_x_r_0_B_x_r_1)
     print('calculated tree representation')
+    return tree_representation
+
+
+if __name__ == '__main__':
+    main()

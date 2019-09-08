@@ -1,10 +1,10 @@
 import numpy as np
 
-from src.encoder.poc.ff_network import FeedForwardNetwork
-from src.encoder.poc.layers.activation import Activation
-from src.encoder.poc.layers.binding_cell import BindingCell
-from src.encoder.poc.layers.eltwise import Eltwise
-from src.encoder.poc.layers.input_data import InputData
+from core.encoder.poc.ff_network import FeedForwardNetwork
+from core.encoder.poc.layers.activation import Activation
+from core.encoder.poc.layers.binding_cell import BindingCell
+from core.encoder.poc.layers.eltwise import Eltwise
+from core.encoder.poc.layers.input_data import InputData
 
 
 def build_encoder_network():

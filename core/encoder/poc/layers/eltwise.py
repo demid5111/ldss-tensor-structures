@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.encoder.poc.layers.ilayer import ILayer
+from core.encoder.poc.layers.ilayer import ILayer
 
 
 class Eltwise(ILayer):

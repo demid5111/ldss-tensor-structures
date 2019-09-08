@@ -1,8 +1,8 @@
 import numpy as np
 
-from recursive_structure import pre_process_roles
-from shifting_structure import main as shifting_main, generate_shapes
-from src.unshifter.vendor.network import build_tree_unshifter_network
+from demo.recursive_structure import pre_process_roles
+from demo.shifting_structure import main as shifting_main, generate_shapes
+from core.unshifter.vendor.network import build_tree_unshifter_network
 
 
 def reshape_to_satisfy_max_depth(tensor_representation, max_tree_depth, role_shape, filler_shape):

@@ -3,9 +3,9 @@ from functools import reduce
 import numpy as np
 import keras.backend as K
 
-from src.encoder.vendor.network import build_encoder_network as keras_encoder_network, \
+from core.encoder.vendor.network import build_encoder_network as keras_encoder_network, \
     prepare_shapes as prepare_encoder_shapes
-from src.decoder.vendor.network import build_filler_decoder_network as keras_filler_decoder_network, \
+from core.decoder.vendor.network import build_filler_decoder_network as keras_filler_decoder_network, \
     prepare_shapes as prepare_decoder_shapes
 
 

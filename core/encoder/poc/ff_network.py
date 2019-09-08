@@ -1,6 +1,6 @@
 import networkx as nx
 
-from src.encoder.poc.layers.ilayer import ILayer
+from core.encoder.poc.layers.ilayer import ILayer
 
 
 class FeedForwardNetwork:

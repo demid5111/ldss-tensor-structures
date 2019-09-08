@@ -1,7 +1,6 @@
 import numpy as np
 
-from recursive_structure import pre_process_roles
-from src.joiner.vendor.network import build_tree_joiner_network
+from core.joiner.vendor.network import build_tree_joiner_network
 
 
 def generate_shapes(max_tree_depth, role_shape, filler_shape):

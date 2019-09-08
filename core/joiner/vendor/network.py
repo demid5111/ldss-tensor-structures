@@ -8,7 +8,7 @@ from keras.models import Model
 
 from keras import backend as K
 
-from src.decoder.vendor.network import mat_transpose
+from core.decoder.vendor.network import mat_transpose
 
 
 def mat_mul(tensors):

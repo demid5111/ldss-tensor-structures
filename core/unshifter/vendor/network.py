@@ -5,7 +5,7 @@ import numpy as np
 from keras.layers import Add
 from keras.models import Model
 
-from src.joiner.vendor.network import constant_input, filler_input_subgraph
+from core.joiner.vendor.network import constant_input, filler_input_subgraph
 
 
 def unshift_matrix(role, filler_size, max_depth, name):

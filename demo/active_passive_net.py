@@ -33,29 +33,49 @@
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
-from demo.shifting_structure import generate_shapes, generate_input_placeholder, extract_per_level_tensor_representation
+from demo.shifting_structure import generate_shapes, generate_input_placeholder
+from demo.unshifting_structure import extract_per_level_tensor_representation
 
 
-def shift_by_role(f_shapes, max_depth, role_index, role, filler):
-    single_filler_shape = filler.shape
-    single_role_shape = role.shape
-    placeholders = (
-        generate_input_placeholder(f_shapes),
-        generate_input_placeholder(f_shapes)
-    )
-    placeholders[role_index][0] = filler.reshape(1, *single_filler_shape)
+def prepare_input(subtree, max_shape):
+    if subtree is None:
+        # there is no subtree for this role, therefore just generate the placeholder
+        return generate_input_placeholder(max_shape)
+    subtree_shapes = np.array(tuple(np.array(i.shape) for i in subtree))
 
-    inputs = []
-    for p in placeholders:
-        for i in p:
-            inputs.append(i)
+    if len(subtree_shapes) == len(max_shape) and \
+            np.all([np.all(np.equal(subtree_shapes[i], max_shape[i])) for i, _ in enumerate(subtree_shapes)]):
+        # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
+        # the subtree is already of a needed shape, just keep it unchanged
+        return subtree
 
-    fillers_joined = keras_joiner.predict_on_batch(inputs)
+    if hasattr(subtree, 'shape') and len(subtree.shape) == 1:
+        # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
+        # subtree is a simple filler
+        placeholder = generate_input_placeholder(max_shape)
+        placeholder[0] = subtree.reshape(1, *subtree.shape)
+        return placeholder
 
+    raise NotImplementedError('This subtree cannot be prepared for join')
+
+
+def elementary_join(input_structure_max_shape, roles, subtrees):
+    input_tensors = map(lambda s: prepare_input(s, input_structure_max_shape), subtrees)
+
+    fillers_joined = keras_joiner.predict_on_batch([i for p in input_tensors for i in p])
+
+    single_role_shape = roles[0].shape
+    single_filler_shape = list(filter(lambda el: el is not None, subtrees))[0].shape
+    max_depth = input_structure_max_shape.shape[0]
+    # TODO: maximum shape should be found from the max shape of input structure
     return extract_per_level_tensor_representation(fillers_joined,
                                                    max_tree_depth=max_depth,
                                                    role_shape=single_role_shape,
                                                    filler_shape=single_filler_shape)
+
+
+def get_filler_by(name, order, fillers):
+    return fillers[order.index(name)]
 
 
 if __name__ == '__main__':
@@ -99,11 +119,19 @@ if __name__ == '__main__':
 
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
-    t_A_x_r_0 = shift_by_role(f_shapes=fillers_shapes,
-                              max_depth=MAX_TREE_DEPTH,
-                              role_index=0,
-                              role=roles[0],
-                              filler=fillers[0])
+    t_V_x_r_0_P_x_r_1 = elementary_join(input_structure_max_shape=fillers_shapes,
+                                        roles=roles,
+                                        subtrees=(
+                                            get_filler_by(name='V', order=order_case_active, fillers=fillers),
+                                            get_filler_by(name='P', order=order_case_active, fillers=fillers)
+                                        ))
+    print('calculated cons(V,P)')
 
-    print(t_A_x_r_0)
-    print('calculated cons (A _x_ r_0)')
+    t_A_r0_V_r0r1_P_r1r1 = elementary_join(input_structure_max_shape=fillers_shapes,
+                                           roles=roles,
+                                           subtrees=(
+                                               get_filler_by(name='A', order=order_case_active, fillers=fillers),
+                                               t_V_x_r_0_P_x_r_1
+                                           ))
+    print('calculated cons(A,cons(V,P))')
+    print('Found tensor representation of the Active Voice sentence')

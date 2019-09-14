@@ -40,6 +40,7 @@ def extract_per_level_tensor_representation(fillers_joined, max_tree_depth, role
         levels.append(product)
     return levels
 
+
 if __name__ == '__main__':
     fillers_case_1 = np.array([
         [8, 0, 0],  # A

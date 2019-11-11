@@ -33,6 +33,7 @@
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
+from core.unshifter.vendor.network import build_tree_unshifter_network
 from demo.shifting_structure import generate_shapes, generate_input_placeholder
 from demo.unshifting_structure import extract_per_level_tensor_representation
 
@@ -59,10 +60,10 @@ def prepare_input(subtree, max_shape):
     raise NotImplementedError('This subtree cannot be prepared for join')
 
 
-def elementary_join(input_structure_max_shape, basic_roles, basic_fillers, subtrees):
+def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basic_fillers, subtrees):
     input_tensors = map(lambda s: prepare_input(s, input_structure_max_shape), subtrees)
 
-    fillers_joined = keras_joiner.predict_on_batch([i for p in input_tensors for i in p])
+    fillers_joined = joiner_network.predict_on_batch([i for p in input_tensors for i in p])
 
     single_role_shape = basic_roles[0].shape
     single_filler_shape = basic_fillers[0].shape
@@ -118,7 +119,8 @@ if __name__ == '__main__':
 
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
-    t_V_r0_P_r1 = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_V_r0_P_r1 = elementary_join(joiner_network=keras_joiner,
+                                  input_structure_max_shape=fillers_shapes,
                                   basic_roles=roles,
                                   basic_fillers=fillers,
                                   subtrees=(
@@ -127,7 +129,8 @@ if __name__ == '__main__':
                                   ))
     print('calculated cons(V,P)')
 
-    t_active_voice = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_active_voice = elementary_join(joiner_network=keras_joiner,
+                                     input_structure_max_shape=fillers_shapes,
                                      basic_roles=roles,
                                      basic_fillers=fillers,
                                      subtrees=(
@@ -137,7 +140,8 @@ if __name__ == '__main__':
     print('calculated cons(A,cons(V,P))')
     print('Found tensor representation of the Active Voice sentence')
 
-    t_by_r0_A_r1 = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_by_r0_A_r1 = elementary_join(joiner_network=keras_joiner,
+                                   input_structure_max_shape=fillers_shapes,
                                    basic_roles=roles,
                                    basic_fillers=fillers,
                                    subtrees=(
@@ -146,7 +150,8 @@ if __name__ == '__main__':
                                    ))
     print('calculated cons(by,A)')
 
-    t_Aux_r0_V_r1 = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_Aux_r0_V_r1 = elementary_join(joiner_network=keras_joiner,
+                                    input_structure_max_shape=fillers_shapes,
                                     basic_roles=roles,
                                     basic_fillers=fillers,
                                     subtrees=(
@@ -155,7 +160,8 @@ if __name__ == '__main__':
                                     ))
     print('calculated cons(Aux,V)')
 
-    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = elementary_join(joiner_network=keras_joiner,
+                                                       input_structure_max_shape=fillers_shapes,
                                                        basic_roles=roles,
                                                        basic_fillers=fillers,
                                                        subtrees=(
@@ -164,7 +170,8 @@ if __name__ == '__main__':
                                                        ))
     print('calculated cons(cons(Aux,V), cons(by,A))')
 
-    t_passive_voice = elementary_join(input_structure_max_shape=fillers_shapes,
+    t_passive_voice = elementary_join(joiner_network=keras_joiner,
+                                      input_structure_max_shape=fillers_shapes,
                                       basic_roles=roles,
                                       basic_fillers=fillers,
                                       subtrees=(
@@ -175,3 +182,20 @@ if __name__ == '__main__':
                                       ))
     print('calculated cons(P, cons(cons(Aux,V), cons(by,A)))')
     print('Found tensor representation of the Passive Voice sentence')
+
+    dual_basic_roles_case_1 = np.linalg.inv(roles)
+    keras_ex1_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1,
+                                                       fillers_shapes=fillers_shapes,
+                                                       role_index=1)
+
+    extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = keras_ex1_unshifter.predict_on_batch([
+        *t_passive_voice
+    ])
+
+    extracted_t_Aux_r0_V_r1 = keras_ex1_unshifter.predict_on_batch([
+        *extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1
+    ])
+
+    extracted_t_Aux = keras_ex1_unshifter.predict_on_batch([
+        *extracted_t_Aux_r0_V_r1
+    ])

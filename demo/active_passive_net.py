@@ -35,7 +35,7 @@ import numpy as np
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
 from demo.shifting_structure import generate_shapes, generate_input_placeholder
-from demo.unshifting_structure import extract_per_level_tensor_representation
+from demo.unshifting_structure import extract_per_level_tensor_representation, reshape_to_satisfy_max_depth
 
 
 def prepare_input(subtree, max_shape):
@@ -184,12 +184,20 @@ if __name__ == '__main__':
     print('Found tensor representation of the Passive Voice sentence')
 
     dual_basic_roles_case_1 = np.linalg.inv(roles)
+    fillers_shapes_unshift = generate_shapes(max_tree_depth=MAX_TREE_DEPTH + 1,
+                                     role_shape=SINGLE_ROLE_SHAPE,
+                                     filler_shape=SINGLE_FILLER_SHAPE)[1:]
     keras_ex1_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1,
-                                                       fillers_shapes=fillers_shapes,
+                                                       fillers_shapes=fillers_shapes_unshift,
                                                        role_index=1)
 
+    prepared_for_unshift = reshape_to_satisfy_max_depth(t_passive_voice,
+                                                        MAX_TREE_DEPTH,
+                                                        SINGLE_ROLE_SHAPE,
+                                                        SINGLE_FILLER_SHAPE)
+
     extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = keras_ex1_unshifter.predict_on_batch([
-        *t_passive_voice
+        *prepared_for_unshift
     ])
 
     extracted_t_Aux_r0_V_r1 = keras_ex1_unshifter.predict_on_batch([

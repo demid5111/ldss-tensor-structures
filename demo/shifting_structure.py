@@ -112,9 +112,6 @@ def main():
     |
     A (left-child-of-left-child-of-root)
     """
-    expected_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH,
-                                      role_shape=SINGLE_ROLE_SHAPE,
-                                      filler_shape=SINGLE_FILLER_SHAPE)
     tensor_repr_A_x_r_0 = extract_per_level_tensor_representation(fillers_joined,
                                                                   max_tree_depth=MAX_TREE_DEPTH,
                                                                   role_shape=SINGLE_ROLE_SHAPE,

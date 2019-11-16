@@ -36,7 +36,8 @@ from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
 from demo.shifting_structure import generate_shapes, generate_input_placeholder, \
     extract_per_level_tensor_representation_after_shift, reshape_to_satisfy_max_depth_after_shift
-from demo.unshifting_structure import reshape_to_satisfy_max_depth_after_unshift
+from demo.unshifting_structure import reshape_to_satisfy_max_depth_after_unshift, generate_shapes_for_unshift, \
+    extract_per_level_tensor_representation_after_unshift
 
 
 def prepare_input(subtree, max_shape):
@@ -70,13 +71,13 @@ def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basi
     single_filler_shape = basic_fillers[0].shape
     max_depth = input_structure_max_shape.shape[0]
     tensor_repr = extract_per_level_tensor_representation_after_shift(fillers_joined,
-                                                                        max_tree_depth=max_depth,
-                                                                        role_shape=single_role_shape,
-                                                                        filler_shape=single_filler_shape)
+                                                                      max_tree_depth=max_depth,
+                                                                      role_shape=single_role_shape,
+                                                                      filler_shape=single_filler_shape)
     return reshape_to_satisfy_max_depth_after_shift(tensor_repr,
-                                                      max_depth,
-                                                      single_role_shape,
-                                                      single_filler_shape)
+                                                    max_depth,
+                                                    single_role_shape,
+                                                    single_filler_shape)
 
 
 def get_filler_by(name, order, fillers):
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     }
     order_case_passive = ['A', 'V', 'P', 'Aux', 'by']
 
-    MAX_TREE_DEPTH = 3
+    MAX_TREE_DEPTH = 4
     SINGLE_ROLE_SHAPE = roles[0].shape
     SINGLE_FILLER_SHAPE = fillers[0].shape
 
@@ -160,8 +161,8 @@ if __name__ == '__main__':
                                     basic_roles=roles,
                                     basic_fillers=fillers,
                                     subtrees=(
-                                        get_filler_by(name='by', order=order_case_passive, fillers=fillers),
-                                        get_filler_by(name='A', order=order_case_passive, fillers=fillers)
+                                        get_filler_by(name='Aux', order=order_case_passive, fillers=fillers),
+                                        get_filler_by(name='V', order=order_case_passive, fillers=fillers)
                                     ))
     print('calculated cons(Aux,V)')
 
@@ -189,26 +190,60 @@ if __name__ == '__main__':
     print('Found tensor representation of the Passive Voice sentence')
 
     dual_basic_roles_case_1 = np.linalg.inv(roles)
-    fillers_shapes_unshift = generate_shapes(max_tree_depth=MAX_TREE_DEPTH + 1,
-                                             role_shape=SINGLE_ROLE_SHAPE,
-                                             filler_shape=SINGLE_FILLER_SHAPE)[1:]
+    fillers_shapes_unshift = generate_shapes_for_unshift(max_tree_depth=MAX_TREE_DEPTH - 1,
+                                                         role_shape=SINGLE_ROLE_SHAPE,
+                                                         filler_shape=SINGLE_FILLER_SHAPE)
     keras_ex1_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1,
                                                        fillers_shapes=fillers_shapes_unshift,
                                                        role_index=1)
+    keras_ex0_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1,
+                                                       fillers_shapes=fillers_shapes_unshift,
+                                                       role_index=0)
 
     prepared_for_unshift = reshape_to_satisfy_max_depth_after_unshift(t_passive_voice,
-                                                                      MAX_TREE_DEPTH,
+                                                                      MAX_TREE_DEPTH - 1,
                                                                       SINGLE_ROLE_SHAPE,
                                                                       SINGLE_FILLER_SHAPE)
 
-    extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = keras_ex1_unshifter.predict_on_batch([
+    extracted_child = keras_ex1_unshifter.predict_on_batch([
         *prepared_for_unshift
     ])
 
-    extracted_t_Aux_r0_V_r1 = keras_ex1_unshifter.predict_on_batch([
-        *extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1
+    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1_representation = extract_per_level_tensor_representation_after_unshift(
+        extracted_child,
+        max_tree_depth=MAX_TREE_DEPTH-1,
+        role_shape=SINGLE_ROLE_SHAPE,
+        filler_shape=SINGLE_FILLER_SHAPE)
+
+    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1_for_unshift = reshape_to_satisfy_max_depth_after_unshift(t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1_representation,
+                                                                      MAX_TREE_DEPTH - 1,
+                                                                      SINGLE_ROLE_SHAPE,
+                                                                      SINGLE_FILLER_SHAPE)
+
+    extracted_child = keras_ex0_unshifter.predict_on_batch([
+        *t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1_for_unshift
     ])
 
-    extracted_t_Aux = keras_ex1_unshifter.predict_on_batch([
-        *extracted_t_Aux_r0_V_r1
+    t_Aux_r0_V_r1_representation = extract_per_level_tensor_representation_after_unshift(
+        extracted_child,
+        max_tree_depth=MAX_TREE_DEPTH - 1,
+        role_shape=SINGLE_ROLE_SHAPE,
+        filler_shape=SINGLE_FILLER_SHAPE)
+
+    t_Aux_r0_V_r1_for_unshift = reshape_to_satisfy_max_depth_after_unshift(
+        t_Aux_r0_V_r1_representation,
+        MAX_TREE_DEPTH - 1,
+        SINGLE_ROLE_SHAPE,
+        SINGLE_FILLER_SHAPE)
+
+    extracted_child = keras_ex0_unshifter.predict_on_batch([
+        *t_Aux_r0_V_r1_for_unshift
     ])
+
+    t_Aux_representation = extract_per_level_tensor_representation_after_unshift(
+        extracted_child,
+        max_tree_depth=MAX_TREE_DEPTH - 1,
+        role_shape=SINGLE_ROLE_SHAPE,
+        filler_shape=SINGLE_FILLER_SHAPE)
+
+    print(t_Aux_representation)

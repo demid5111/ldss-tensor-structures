@@ -52,7 +52,7 @@ def reshape_to_satisfy_max_depth_after_shift(tensor_representation, max_tree_dep
 
 
 def sum_tensors(left, right):
-    return [l+r for l,r in zip(left, right)]
+    return [l + r for l, r in zip(left, right)]
 
 
 def main():
@@ -214,14 +214,20 @@ def main():
         *right_subtree_placeholder,
     ])
 
-    tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation_after_shift(fillers_joined_fourth_case_complex_c,
-                                                                                    max_tree_depth=MAX_TREE_DEPTH,
-                                                                                    role_shape=SINGLE_ROLE_SHAPE,
-                                                                                    filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation_after_shift(
+        fillers_joined_fourth_case_complex_c,
+        max_tree_depth=MAX_TREE_DEPTH,
+        role_shape=SINGLE_ROLE_SHAPE,
+        filler_shape=SINGLE_FILLER_SHAPE)
 
     tree_representation = sum_tensors(tensor_repr_C_x_r_1_x_r_0, tensor_repr_A_x_r_0_x_r_0_B_x_r_1)
     print('calculated tree representation')
-    return tree_representation
+
+    prepared_for_shift_tree_representation = reshape_to_satisfy_max_depth_after_shift(tree_representation,
+                                                                                      MAX_TREE_DEPTH+1,
+                                                                                      SINGLE_ROLE_SHAPE,
+                                                                                      SINGLE_FILLER_SHAPE)
+    return prepared_for_shift_tree_representation
 
 
 if __name__ == '__main__':

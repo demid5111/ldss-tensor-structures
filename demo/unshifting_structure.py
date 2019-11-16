@@ -6,11 +6,11 @@ from core.unshifter.vendor.network import build_tree_unshifter_network
 
 
 def reshape_to_satisfy_max_depth_after_unshift(tensor_representation, max_tree_depth, role_shape, filler_shape):
-    expected_shapes = generate_shapes(max_tree_depth=max_tree_depth+1,
+    expected_shapes = generate_shapes(max_tree_depth=max_tree_depth + 1,
                                       role_shape=role_shape,
                                       filler_shape=filler_shape)
 
-    res_representation = [None for _ in range(max_tree_depth+1)]
+    res_representation = [None for _ in range(max_tree_depth + 1)]
     existing_levels = set()
     for level_representation in tensor_representation:
         for j, expected_shape in enumerate(expected_shapes):
@@ -41,6 +41,19 @@ def extract_per_level_tensor_representation_after_unshift(fillers_joined, max_tr
     return levels
 
 
+def generate_shapes_for_unshift(max_tree_depth, role_shape, filler_shape):
+    """
+    ignoring the very first component that represents the root of the tree
+    :param max_tree_depth:
+    :param role_shape:
+    :param filler_shape:
+    :return:
+    """
+    return generate_shapes(max_tree_depth=max_tree_depth + 1,
+                           role_shape=role_shape,
+                           filler_shape=filler_shape)[1:]
+
+
 if __name__ == '__main__':
     fillers_case_1 = np.array([
         [8, 0, 0],  # A
@@ -63,9 +76,9 @@ if __name__ == '__main__':
     SINGLE_ROLE_SHAPE = roles_case_1[0].shape
     SINGLE_FILLER_SHAPE = fillers_case_1[0].shape
 
-    fillers_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH+1,
-                                     role_shape=SINGLE_ROLE_SHAPE,
-                                     filler_shape=SINGLE_FILLER_SHAPE)[1:]
+    fillers_shapes = generate_shapes_for_unshift(max_tree_depth=MAX_TREE_DEPTH + 1,
+                                                 role_shape=SINGLE_ROLE_SHAPE,
+                                                 filler_shape=SINGLE_FILLER_SHAPE)
 
     original_structure = shifting_main()
 

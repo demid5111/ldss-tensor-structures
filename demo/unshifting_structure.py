@@ -5,7 +5,7 @@ from demo.shifting_structure import main as shifting_main, generate_shapes
 from core.unshifter.vendor.network import build_tree_unshifter_network
 
 
-def reshape_to_satisfy_max_depth(tensor_representation, max_tree_depth, role_shape, filler_shape):
+def reshape_to_satisfy_max_depth_after_unshift(tensor_representation, max_tree_depth, role_shape, filler_shape):
     expected_shapes = generate_shapes(max_tree_depth=max_tree_depth+1,
                                       role_shape=role_shape,
                                       filler_shape=filler_shape)
@@ -26,7 +26,7 @@ def reshape_to_satisfy_max_depth(tensor_representation, max_tree_depth, role_sha
     return res_representation[1:]
 
 
-def extract_per_level_tensor_representation(fillers_joined, max_tree_depth, role_shape, filler_shape):
+def extract_per_level_tensor_representation_after_unshift(fillers_joined, max_tree_depth, role_shape, filler_shape):
     levels = []
     slicing_index = 0
 
@@ -73,10 +73,10 @@ if __name__ == '__main__':
     # original_structure[1][0][2][0][1] = 0.
     # original_structure[1][0][2][1][0] = 500.
 
-    prepared_for_unshift = reshape_to_satisfy_max_depth(original_structure,
-                                                        MAX_TREE_DEPTH,
-                                                        SINGLE_ROLE_SHAPE,
-                                                        SINGLE_FILLER_SHAPE)
+    prepared_for_unshift = reshape_to_satisfy_max_depth_after_unshift(original_structure,
+                                                                      MAX_TREE_DEPTH,
+                                                                      SINGLE_ROLE_SHAPE,
+                                                                      SINGLE_FILLER_SHAPE)
 
     keras_u0_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1, fillers_shapes=fillers_shapes)
 
@@ -86,9 +86,9 @@ if __name__ == '__main__':
 
     print('calculated ex0()')
 
-    left_child_tensor_representation = extract_per_level_tensor_representation(extracted_left_child,
-                                                                               max_tree_depth=MAX_TREE_DEPTH,
-                                                                               role_shape=SINGLE_ROLE_SHAPE,
-                                                                               filler_shape=SINGLE_FILLER_SHAPE)
+    left_child_tensor_representation = extract_per_level_tensor_representation_after_unshift(extracted_left_child,
+                                                                                             max_tree_depth=MAX_TREE_DEPTH,
+                                                                                             role_shape=SINGLE_ROLE_SHAPE,
+                                                                                             filler_shape=SINGLE_FILLER_SHAPE)
 
     print('extracted A_x_r_0_C_x_r_1')

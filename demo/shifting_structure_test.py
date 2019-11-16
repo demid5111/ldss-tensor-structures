@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
-from demo.shifting_structure import generate_shapes, generate_input_placeholder, extract_per_level_tensor_representation
+from demo.shifting_structure import generate_shapes, generate_input_placeholder, extract_per_level_tensor_representation_after_shift
 
 
 class ShiftingIntegrationTest(unittest.TestCase):
@@ -111,10 +111,10 @@ class ExtractTensorsTest(unittest.TestCase):
         SINGLE_ROLE_SHAPE = roles_case_1[0].shape
         SINGLE_FILLER_SHAPE = fillers_case_1[0].shape
 
-        tensor_repr_A_x_r_0 = extract_per_level_tensor_representation(input_subtree,
-                                                                      max_tree_depth=MAX_TREE_DEPTH,
-                                                                      role_shape=SINGLE_ROLE_SHAPE,
-                                                                      filler_shape=SINGLE_FILLER_SHAPE)
+        tensor_repr_A_x_r_0 = extract_per_level_tensor_representation_after_shift(input_subtree,
+                                                                                  max_tree_depth=MAX_TREE_DEPTH,
+                                                                                  role_shape=SINGLE_ROLE_SHAPE,
+                                                                                  filler_shape=SINGLE_FILLER_SHAPE)
 
         tensor_repr_A_x_r_0_expected = [
             np.array([

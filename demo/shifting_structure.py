@@ -15,7 +15,7 @@ def generate_input_placeholder(fillers_shapes):
     return [np.zeros(shape) for shape in fillers_shapes]
 
 
-def extract_per_level_tensor_representation(fillers_joined, max_tree_depth, role_shape, filler_shape):
+def extract_per_level_tensor_representation_after_shift(fillers_joined, max_tree_depth, role_shape, filler_shape):
     levels = []
     slicing_index = 0
 
@@ -30,7 +30,7 @@ def extract_per_level_tensor_representation(fillers_joined, max_tree_depth, role
     return levels
 
 
-def reshape_to_satisfy_max_depth(tensor_representation, max_tree_depth, role_shape, filler_shape):
+def reshape_to_satisfy_max_depth_after_shift(tensor_representation, max_tree_depth, role_shape, filler_shape):
     expected_shapes = generate_shapes(max_tree_depth=max_tree_depth,
                                       role_shape=role_shape,
                                       filler_shape=filler_shape)
@@ -112,16 +112,16 @@ def main():
     |
     A (left-child-of-left-child-of-root)
     """
-    tensor_repr_A_x_r_0 = extract_per_level_tensor_representation(fillers_joined,
-                                                                  max_tree_depth=MAX_TREE_DEPTH,
-                                                                  role_shape=SINGLE_ROLE_SHAPE,
-                                                                  filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_A_x_r_0 = extract_per_level_tensor_representation_after_shift(fillers_joined,
+                                                                              max_tree_depth=MAX_TREE_DEPTH,
+                                                                              role_shape=SINGLE_ROLE_SHAPE,
+                                                                              filler_shape=SINGLE_FILLER_SHAPE)
     print('split per layer')
 
-    prepared_for_shift = reshape_to_satisfy_max_depth(tensor_repr_A_x_r_0,
-                                                      MAX_TREE_DEPTH,
-                                                      SINGLE_ROLE_SHAPE,
-                                                      SINGLE_FILLER_SHAPE)
+    prepared_for_shift = reshape_to_satisfy_max_depth_after_shift(tensor_repr_A_x_r_0,
+                                                                  MAX_TREE_DEPTH,
+                                                                  SINGLE_ROLE_SHAPE,
+                                                                  SINGLE_FILLER_SHAPE)
     print('reshaped for second shift')
 
     fillers_joined_second_case = keras_joiner.predict_on_batch([
@@ -130,10 +130,10 @@ def main():
     ])
     print('calculated cons (A _x_ r_0 _x_ r_0)')
 
-    tensor_repr_A_x_r_0_x_r_0 = extract_per_level_tensor_representation(fillers_joined_second_case,
-                                                                        max_tree_depth=MAX_TREE_DEPTH,
-                                                                        role_shape=SINGLE_ROLE_SHAPE,
-                                                                        filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_A_x_r_0_x_r_0 = extract_per_level_tensor_representation_after_shift(fillers_joined_second_case,
+                                                                                    max_tree_depth=MAX_TREE_DEPTH,
+                                                                                    role_shape=SINGLE_ROLE_SHAPE,
+                                                                                    filler_shape=SINGLE_FILLER_SHAPE)
     print('split per layer after second case')
 
     """
@@ -152,10 +152,10 @@ def main():
     A (left-child-of-left-child-of-root)    
     """
 
-    prepared_for_shift_A_x_r_0 = reshape_to_satisfy_max_depth(tensor_repr_A_x_r_0,
-                                                              MAX_TREE_DEPTH,
-                                                              SINGLE_ROLE_SHAPE,
-                                                              SINGLE_FILLER_SHAPE)
+    prepared_for_shift_A_x_r_0 = reshape_to_satisfy_max_depth_after_shift(tensor_repr_A_x_r_0,
+                                                                          MAX_TREE_DEPTH,
+                                                                          SINGLE_ROLE_SHAPE,
+                                                                          SINGLE_FILLER_SHAPE)
 
     right_subtree_placeholder = generate_input_placeholder(fillers_shapes)
     right_subtree_placeholder[0] = fillers_case_1[1].reshape(1, *SINGLE_FILLER_SHAPE)
@@ -165,10 +165,10 @@ def main():
         *right_subtree_placeholder
     ])
 
-    tensor_repr_A_x_r_0_x_r_0_B_x_r_1 = extract_per_level_tensor_representation(fillers_joined_third_case,
-                                                                                max_tree_depth=MAX_TREE_DEPTH,
-                                                                                role_shape=SINGLE_ROLE_SHAPE,
-                                                                                filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_A_x_r_0_x_r_0_B_x_r_1 = extract_per_level_tensor_representation_after_shift(fillers_joined_third_case,
+                                                                                            max_tree_depth=MAX_TREE_DEPTH,
+                                                                                            role_shape=SINGLE_ROLE_SHAPE,
+                                                                                            filler_shape=SINGLE_FILLER_SHAPE)
     print('split per layer after third case')
 
     """
@@ -197,27 +197,27 @@ def main():
         *right_subtree_placeholder
     ])
 
-    tensor_repr_C_x_r_1 = extract_per_level_tensor_representation(fillers_joined_fourth_case_simple_c,
-                                                                  max_tree_depth=MAX_TREE_DEPTH,
-                                                                  role_shape=SINGLE_ROLE_SHAPE,
-                                                                  filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_C_x_r_1 = extract_per_level_tensor_representation_after_shift(fillers_joined_fourth_case_simple_c,
+                                                                              max_tree_depth=MAX_TREE_DEPTH,
+                                                                              role_shape=SINGLE_ROLE_SHAPE,
+                                                                              filler_shape=SINGLE_FILLER_SHAPE)
 
     right_subtree_placeholder = generate_input_placeholder(fillers_shapes)
 
-    prepared_for_shift_C_x_r_1 = reshape_to_satisfy_max_depth(tensor_repr_C_x_r_1,
-                                                              MAX_TREE_DEPTH,
-                                                              SINGLE_ROLE_SHAPE,
-                                                              SINGLE_FILLER_SHAPE)
+    prepared_for_shift_C_x_r_1 = reshape_to_satisfy_max_depth_after_shift(tensor_repr_C_x_r_1,
+                                                                          MAX_TREE_DEPTH,
+                                                                          SINGLE_ROLE_SHAPE,
+                                                                          SINGLE_FILLER_SHAPE)
 
     fillers_joined_fourth_case_complex_c = keras_joiner.predict_on_batch([
         *prepared_for_shift_C_x_r_1,
         *right_subtree_placeholder,
     ])
 
-    tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation(fillers_joined_fourth_case_complex_c,
-                                                                        max_tree_depth=MAX_TREE_DEPTH,
-                                                                        role_shape=SINGLE_ROLE_SHAPE,
-                                                                        filler_shape=SINGLE_FILLER_SHAPE)
+    tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation_after_shift(fillers_joined_fourth_case_complex_c,
+                                                                                    max_tree_depth=MAX_TREE_DEPTH,
+                                                                                    role_shape=SINGLE_ROLE_SHAPE,
+                                                                                    filler_shape=SINGLE_FILLER_SHAPE)
 
     tree_representation = sum_tensors(tensor_repr_C_x_r_1_x_r_0, tensor_repr_A_x_r_0_x_r_0_B_x_r_1)
     print('calculated tree representation')

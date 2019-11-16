@@ -34,8 +34,9 @@ import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
-from demo.shifting_structure import generate_shapes, generate_input_placeholder
-from demo.unshifting_structure import extract_per_level_tensor_representation, reshape_to_satisfy_max_depth
+from demo.shifting_structure import generate_shapes, generate_input_placeholder, \
+    extract_per_level_tensor_representation_after_shift, reshape_to_satisfy_max_depth_after_shift
+from demo.unshifting_structure import reshape_to_satisfy_max_depth_after_unshift
 
 
 def prepare_input(subtree, max_shape):
@@ -68,10 +69,14 @@ def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basi
     single_role_shape = basic_roles[0].shape
     single_filler_shape = basic_fillers[0].shape
     max_depth = input_structure_max_shape.shape[0]
-    return extract_per_level_tensor_representation(fillers_joined,
-                                                   max_tree_depth=max_depth,
-                                                   role_shape=single_role_shape,
-                                                   filler_shape=single_filler_shape)
+    tensor_repr = extract_per_level_tensor_representation_after_shift(fillers_joined,
+                                                                        max_tree_depth=max_depth,
+                                                                        role_shape=single_role_shape,
+                                                                        filler_shape=single_filler_shape)
+    return reshape_to_satisfy_max_depth_after_shift(tensor_repr,
+                                                      max_depth,
+                                                      single_role_shape,
+                                                      single_filler_shape)
 
 
 def get_filler_by(name, order, fillers):
@@ -185,16 +190,16 @@ if __name__ == '__main__':
 
     dual_basic_roles_case_1 = np.linalg.inv(roles)
     fillers_shapes_unshift = generate_shapes(max_tree_depth=MAX_TREE_DEPTH + 1,
-                                     role_shape=SINGLE_ROLE_SHAPE,
-                                     filler_shape=SINGLE_FILLER_SHAPE)[1:]
+                                             role_shape=SINGLE_ROLE_SHAPE,
+                                             filler_shape=SINGLE_FILLER_SHAPE)[1:]
     keras_ex1_unshifter = build_tree_unshifter_network(roles=dual_basic_roles_case_1,
                                                        fillers_shapes=fillers_shapes_unshift,
                                                        role_index=1)
 
-    prepared_for_unshift = reshape_to_satisfy_max_depth(t_passive_voice,
-                                                        MAX_TREE_DEPTH,
-                                                        SINGLE_ROLE_SHAPE,
-                                                        SINGLE_FILLER_SHAPE)
+    prepared_for_unshift = reshape_to_satisfy_max_depth_after_unshift(t_passive_voice,
+                                                                      MAX_TREE_DEPTH,
+                                                                      SINGLE_ROLE_SHAPE,
+                                                                      SINGLE_FILLER_SHAPE)
 
     extracted_t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = keras_ex1_unshifter.predict_on_batch([
         *prepared_for_unshift

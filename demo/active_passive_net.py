@@ -98,9 +98,9 @@ def elementary_extract(extract_network, input_structure_max_shape, basic_roles, 
 
     return extract_per_level_tensor_representation_after_unshift(
         extracted_child,
-        max_tree_depth=MAX_TREE_DEPTH - 1,
-        role_shape=SINGLE_ROLE_SHAPE,
-        filler_shape=SINGLE_FILLER_SHAPE)
+        max_tree_depth=max_depth,
+        role_shape=single_role_shape,
+        filler_shape=single_filler_shape)
 
 
 def get_filler_by(name, order, fillers):

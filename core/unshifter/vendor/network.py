@@ -7,9 +7,10 @@ from keras.models import Model
 from core.joiner.vendor.network import constant_input, filler_input_subgraph
 
 
-def unshift_matrix(role, filler_size, max_depth, name):
+def unshift_matrix(role, filler_size, max_depth, name='unshift'):
     """
     Builds the W_{cons0} matrix
+    :param name:
     :param max_depth: maximum depth of the resulting tree
     :return: W_{cons0} matrix
     """

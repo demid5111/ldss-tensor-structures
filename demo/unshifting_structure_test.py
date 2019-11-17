@@ -82,7 +82,7 @@ class UnshiftingIntegrationTest(unittest.TestCase):
             role_shape=SINGLE_ROLE_SHAPE,
             filler_shape=SINGLE_FILLER_SHAPE)
 
-        for level_idx in range(len(t_V_r0_P_r1)-1):
+        for level_idx in range(len(t_V_r0_P_r1) - 1):
             np.testing.assert_array_equal(
                 t_V_r0_P_r1[level_idx],
                 t_active_voice_right_child_after_unshift[level_idx]

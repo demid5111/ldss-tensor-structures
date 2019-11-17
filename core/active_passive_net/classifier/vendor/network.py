@@ -8,7 +8,7 @@ from core.unshifter.vendor.network import unshift_matrix
 
 
 def normalization(x):
-    return x / x
+    return K.switch(x > 0., x / x,  K.zeros_like(x))
 
 
 def build_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order):

@@ -1,10 +1,14 @@
 from keras.engine import Input
-from keras.layers import Lambda, Cropping1D
+from keras.layers import Lambda, Cropping1D, GlobalMaxPooling1D
 from keras.models import Model
 import keras.backend as K
 
 from core.joiner.vendor.network import constant_input, mat_mul
 from core.unshifter.vendor.network import unshift_matrix
+
+
+def normalization(x):
+    return x / x
 
 
 def build_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order):
@@ -34,6 +38,7 @@ def build_extraction_branch(model_input, roles, filler_len, max_depth, stop_leve
 def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
     filler_len = fillers[0].shape[0]
     max_depth = len(tree_shape) - 1
+    assert max_depth == len(role_extraction_order), 'Extraction should happen until the final filler'
 
     _, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
@@ -45,10 +50,12 @@ def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_o
                                                                    max_depth=max_depth,
                                                                    stop_level=stop_level,
                                                                    role_extraction_order=role_extraction_order)
-
+    reshape_for_pool = Lambda(lambda x: K.tf.reshape(x, (1, filler_len, 1)))(extraction_output)
+    global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
+    normalizer = Lambda(normalization)(global_max_pool)
     return Model(
         inputs=[
             *extraction_inputs,
             flattened_tree_input,
         ],
-        outputs=extraction_output)
+        outputs=normalizer)

@@ -269,3 +269,10 @@ if __name__ == '__main__':
     ])
 
     print(extracted_child)
+
+    tree_for_unshift = flattenize_per_tensor_representation(t_active_voice)
+    extracted_child = keras_full_unshifter.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    print(extracted_child)

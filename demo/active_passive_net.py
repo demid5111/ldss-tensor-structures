@@ -56,14 +56,15 @@ def prepare_input(subtree, max_shape):
         # there is no subtree for this role, therefore just generate the placeholder
         return generate_input_placeholder(max_shape)
     subtree_shapes = np.array(tuple(np.array(i.shape) for i in subtree))
-
-    if len(subtree_shapes) == len(max_shape) and \
+    is_filler_subtree = hasattr(subtree, 'shape') and len(subtree.shape) == 1
+    if not is_filler_subtree and \
+            len(subtree_shapes) == len(max_shape) and \
             np.all([np.all(np.equal(subtree_shapes[i], max_shape[i])) for i, _ in enumerate(subtree_shapes)]):
         # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
         # the subtree is already of a needed shape, just keep it unchanged
         return subtree
 
-    if hasattr(subtree, 'shape') and len(subtree.shape) == 1:
+    if is_filler_subtree:
         # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
         # subtree is a simple filler
         placeholder = generate_input_placeholder(max_shape)

@@ -277,3 +277,6 @@ if __name__ == '__main__':
     ])
 
     print(extracted_child)
+
+    # Extraction head
+    print('Started structure manipulations')

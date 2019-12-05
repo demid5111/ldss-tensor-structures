@@ -8,10 +8,14 @@ from core.unshifter.vendor.network import unshift_matrix
 
 
 def normalization(x):
-    return K.switch(x > 0., x / x,  K.zeros_like(x))
+    return K.switch(x > 0., x / x, K.zeros_like(x))
 
 
-def build_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order):
+def build_one_level_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order):
+    return build_universal_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order)
+
+
+def build_universal_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order):
     shift_inputs = []
     current_input = model_input
     for level_index, role_index in zip(range(max_depth, stop_level - 1, -1), role_extraction_order):
@@ -44,12 +48,12 @@ def build_classification_branch(roles, fillers, tree_shape, role_extraction_orde
     shape = (flattened_tree_num_elements + filler_len, 1)
     flattened_tree_input = Input(shape=(*shape,), batch_shape=(*shape,))
 
-    extraction_inputs, extraction_output = build_extraction_branch(model_input=flattened_tree_input,
-                                                                   roles=roles,
-                                                                   filler_len=filler_len,
-                                                                   max_depth=max_depth,
-                                                                   stop_level=stop_level,
-                                                                   role_extraction_order=role_extraction_order)
+    extraction_inputs, extraction_output = build_universal_extraction_branch(model_input=flattened_tree_input,
+                                                                             roles=roles,
+                                                                             filler_len=filler_len,
+                                                                             max_depth=max_depth,
+                                                                             stop_level=stop_level,
+                                                                             role_extraction_order=role_extraction_order)
     reshape_for_pool = Lambda(lambda x: K.tf.reshape(x, (1, filler_len, 1)))(extraction_output)
     global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
     normalizer = Lambda(normalization)(global_max_pool)
@@ -58,10 +62,10 @@ def build_classification_branch(roles, fillers, tree_shape, role_extraction_orde
 
 def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
     const_inputs, variable_input, output = build_classification_branch(roles=roles,
-                                                 fillers=fillers,
-                                                 tree_shape=tree_shape,
-                                                 role_extraction_order=role_extraction_order,
-                                                 stop_level=stop_level)
+                                                                       fillers=fillers,
+                                                                       tree_shape=tree_shape,
+                                                                       role_extraction_order=role_extraction_order,
+                                                                       stop_level=stop_level)
     return Model(
         inputs=[
             *const_inputs,

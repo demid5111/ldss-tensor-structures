@@ -1,4 +1,4 @@
-def extract_semantic_tree_from_active_voice_branch():
+def extract_semantic_tree_from_active_voice_branch(input_layer):
     verb_extraction_inputs, verb_extraction_output = build_extraction_branch(model_input=flattened_tree_input,
                                                                    roles=roles,
                                                                    filler_len=filler_len,

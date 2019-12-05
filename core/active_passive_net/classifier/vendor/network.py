@@ -35,7 +35,7 @@ def build_extraction_branch(model_input, roles, filler_len, max_depth, stop_leve
     return shift_inputs, current_input
 
 
-def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
+def build_classification_branch(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
     filler_len = fillers[0].shape[0]
     max_depth = len(tree_shape) - 1
     assert max_depth == len(role_extraction_order), 'Extraction should happen until the final filler'
@@ -53,9 +53,18 @@ def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_o
     reshape_for_pool = Lambda(lambda x: K.tf.reshape(x, (1, filler_len, 1)))(extraction_output)
     global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
     normalizer = Lambda(normalization)(global_max_pool)
+    return extraction_inputs, flattened_tree_input, normalizer
+
+
+def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
+    const_inputs, variable_input, output = build_classification_branch(roles=roles,
+                                                 fillers=fillers,
+                                                 tree_shape=tree_shape,
+                                                 role_extraction_order=role_extraction_order,
+                                                 stop_level=stop_level)
     return Model(
         inputs=[
-            *extraction_inputs,
-            flattened_tree_input,
+            *const_inputs,
+            variable_input,
         ],
-        outputs=normalizer)
+        outputs=output)

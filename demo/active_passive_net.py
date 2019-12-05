@@ -33,6 +33,7 @@
 import numpy as np
 
 from core.active_passive_net.classifier.vendor.network import build_filler_extractor_network
+from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
 from demo.shifting_structure import generate_shapes, generate_input_placeholder, \
@@ -280,3 +281,13 @@ if __name__ == '__main__':
 
     # Extraction head
     print('Started structure manipulations')
+
+    keras_active_passive_network = build_active_passive_network(roles=roles,
+                                                                dual_roles=dual_basic_roles_case_1,
+                                                                fillers=fillers,
+                                                                tree_shape=t_passive_voice)
+    extracted_semantic_tree = keras_full_unshifter.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    print('Extracted semantic tree')

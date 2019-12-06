@@ -91,7 +91,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     tf_constant = K.constant(np_constant)
     const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
                                 name='fake_extender_verb_agent')
-    concatenate_verb = Concatenate(axis=0)([const_fake_extender, verb_extraction_output, const_fake_extender])
+    concatenate_verb = Concatenate(axis=0)([verb_extraction_output, const_fake_extender, const_fake_extender])
     # TODO: why is there a constant 3?
     reshaped_verb = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_verb)
 
@@ -118,4 +118,4 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                *agentxr0_pxr1_const_inputs,
                *semantic_tree_const_inputs,
                const_fake_extender
-           ], p_extraction_output
+           ], semantic_tree_output

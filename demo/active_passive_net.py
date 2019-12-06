@@ -32,7 +32,8 @@
 """
 import numpy as np
 
-from core.active_passive_net.classifier.vendor.network import build_filler_extractor_network
+from core.active_passive_net.classifier.vendor.network import build_filler_extractor_network, \
+    build_real_filler_extractor_network
 from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
@@ -279,6 +280,9 @@ if __name__ == '__main__':
 
     print(extracted_child)
 
+    ##########################
+    # REAL ACTIVE-PASSIVE NETWORK
+
     # Extraction head
     print('Started structure manipulations')
 
@@ -286,8 +290,30 @@ if __name__ == '__main__':
                                                                 dual_roles=dual_basic_roles_case_1,
                                                                 fillers=fillers,
                                                                 tree_shape=t_passive_voice)
-    extracted_semantic_tree = keras_full_unshifter.predict_on_batch([
+
+    tree_for_unshift = flattenize_per_tensor_representation(t_passive_voice)
+    extracted_semantic_tree = keras_active_passive_network.predict_on_batch([
+        tree_for_unshift
+    ])
+    tensor_repr = extract_per_level_tensor_representation_after_shift(extracted_semantic_tree,
+                                                                      max_tree_depth=2,
+                                                                      role_shape=roles[0].shape,
+                                                                      filler_shape=fillers[0].shape)
+    syntax_tree = reshape_to_satisfy_max_depth_after_shift(tensor_repr,
+                                                           3,
+                                                           roles[0].shape,
+                                                           fillers[0].shape)
+    print('Extracted semantic tree')
+
+    keras_full_unshifter = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
+                                                               fillers=fillers,
+                                                               tree_shape=syntax_tree,
+                                                               role_extraction_order=[0],
+                                                               stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_child = keras_full_unshifter.predict_on_batch([
         tree_for_unshift
     ])
 
-    print('Extracted semantic tree')
+    print(extracted_child)

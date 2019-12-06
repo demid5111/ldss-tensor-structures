@@ -305,15 +305,41 @@ if __name__ == '__main__':
                                                            fillers[0].shape)
     print('Extracted semantic tree')
 
-    keras_full_unshifter = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
+    keras_decode_verb = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
                                                                fillers=fillers,
                                                                tree_shape=syntax_tree,
                                                                role_extraction_order=[0],
                                                                stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
-    extracted_child = keras_full_unshifter.predict_on_batch([
+    extracted_verb = keras_decode_verb.predict_on_batch([
         tree_for_unshift
     ])
 
-    print(extracted_child)
+    print(extracted_verb)
+
+    keras_decode_agent = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
+                                                               fillers=fillers,
+                                                               tree_shape=syntax_tree,
+                                                               role_extraction_order=[1,0],
+                                                               stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_agent = keras_decode_agent.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    print(extracted_agent)
+
+    keras_decode_patient = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
+                                                               fillers=fillers,
+                                                               tree_shape=syntax_tree,
+                                                               role_extraction_order=[1,1],
+                                                               stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_patient = keras_decode_patient.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    print(extracted_patient)

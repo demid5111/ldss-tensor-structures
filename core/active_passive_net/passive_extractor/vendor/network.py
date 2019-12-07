@@ -9,6 +9,7 @@ from core.joiner.vendor.network import constant_input, mat_mul, shift_matrix
 from core.unshifter.vendor.network import unshift_matrix
 
 
+# TODO: refactor and move to the joiner network
 def build_join_branch(roles, filler_len, max_depth, inputs, prefix=''):
     left_shift_input_name = '{}constant_input_(cons0)'.format(prefix + '_' if prefix else '')
     left_shift_input = constant_input(roles[0], filler_len, max_depth, left_shift_input_name, shift_matrix)
@@ -90,7 +91,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     np_constant = np.zeros((filler_len, 1))
     tf_constant = K.constant(np_constant)
     const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                                name='fake_extender_verb_agent')
+                                name='passive_fake_extender_verb_agent')
     concatenate_verb = Concatenate(axis=0)([verb_extraction_output, const_fake_extender, const_fake_extender])
     # TODO: why is there a constant 3?
     reshaped_verb = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_verb)

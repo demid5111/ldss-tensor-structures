@@ -1,9 +1,28 @@
 import unittest
 import numpy as np
 
+from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
-from demo.active_passive_net import elementary_join, get_filler_by
+from demo.active_passive_net import elementary_join, get_filler_by, check_active_case, encode_active_voice_sentence, \
+    encode_passive_voice_sentence, check_passive_case
 from demo.shifting_structure import generate_shapes
+
+fillers = np.array([
+    [7, 0, 0, 0, 0],  # A
+    [0, 4, 0, 0, 0],  # V
+    [0, 0, 2, 0, 0],  # P
+    [0, 0, 0, 5, 0],  # Aux
+    [0, 0, 0, 0, 3],  # by
+])
+roles = np.array([
+    [10, 0],  # r_0
+    [0, 5],  # r_1
+])
+order_case_active = ['A', 'V', 'P']
+order_case_passive = ['A', 'V', 'P', 'Aux', 'by']
+dual_basic_roles_case_1 = np.linalg.inv(roles)
+SINGLE_ROLE_SHAPE = roles[0].shape
+SINGLE_FILLER_SHAPE = fillers[0].shape
 
 
 class ElementaryJoinTest(unittest.TestCase):
@@ -16,22 +35,8 @@ class ElementaryJoinTest(unittest.TestCase):
         A B  C
         """
         # Input information
-        fillers = np.array([
-            [7, 0, 0, 0, 0],  # A
-            [0, 4, 0, 0, 0],  # V
-            [0, 0, 2, 0, 0],  # P
-            [0, 0, 0, 5, 0],  # Aux
-            [0, 0, 0, 0, 3],  # by
-        ])
-        roles = np.array([
-            [10, 0],  # r_0
-            [0, 5],  # r_1
-        ])
-        order_case_active = ['A', 'V', 'P']
 
         MAX_TREE_DEPTH = 3
-        SINGLE_ROLE_SHAPE = roles[0].shape
-        SINGLE_FILLER_SHAPE = fillers[0].shape
 
         fillers_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH,
                                          role_shape=SINGLE_ROLE_SHAPE,
@@ -97,3 +102,47 @@ class ElementaryJoinTest(unittest.TestCase):
                 t_V_r0_P_r1[level_idx],
                 t_V_r0_P_r1_expected[level_idx]
             )
+
+
+class APNETIntegrationTest(unittest.TestCase):
+    def test_active_voice_sentence_ideal(self):
+        t_active_voice = encode_active_voice_sentence(roles=roles,
+                                                      fillers=fillers,
+                                                      fillers_order=order_case_active)
+
+        keras_active_passive_network = build_active_passive_network(roles=roles,
+                                                                    dual_roles=dual_basic_roles_case_1,
+                                                                    fillers=fillers,
+                                                                    tree_shape=t_active_voice)
+
+        res = check_active_case(ap_net=keras_active_passive_network,
+                                encoded_sentence=t_active_voice,
+                                roles=roles,
+                                fillers=fillers,
+                                dual_roles=dual_basic_roles_case_1)
+
+        for filler_name, filler_raw_encoded in res.items():
+            expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
+            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)
+
+    def test_passive_voice_sentence_ideal(self):
+        t_passive_voice = encode_passive_voice_sentence(roles=roles,
+                                                        fillers=fillers,
+                                                        fillers_order=order_case_passive)
+
+        keras_active_passive_network = build_active_passive_network(roles=roles,
+                                                                    dual_roles=dual_basic_roles_case_1,
+                                                                    fillers=fillers,
+                                                                    tree_shape=t_passive_voice)
+
+        res = check_passive_case(ap_net=keras_active_passive_network,
+                                 encoded_sentence=t_passive_voice,
+                                 roles=roles,
+                                 fillers=fillers,
+                                 dual_roles=dual_basic_roles_case_1)
+
+        for filler_name, filler_raw_encoded in res.items():
+            expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
+            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)

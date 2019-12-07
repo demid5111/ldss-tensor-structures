@@ -122,6 +122,208 @@ def get_filler_by(name, order, fillers):
     return fillers[order.index(name)]
 
 
+def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
+    tree_for_unshift = flattenize_per_tensor_representation(encoded_sentence)
+    extracted_semantic_tree = ap_net.predict_on_batch([
+        tree_for_unshift
+    ])
+    tensor_repr = extract_per_level_tensor_representation_after_shift(extracted_semantic_tree,
+                                                                      max_tree_depth=2,
+                                                                      role_shape=roles[0].shape,
+                                                                      filler_shape=fillers[0].shape)
+    syntax_tree = reshape_to_satisfy_max_depth_after_shift(tensor_repr,
+                                                           3,
+                                                           roles[0].shape,
+                                                           fillers[0].shape)
+    print('Extracted semantic tree')
+
+    keras_decode_verb = build_real_filler_extractor_network(roles=dual_roles,
+                                                            fillers=fillers,
+                                                            tree_shape=syntax_tree,
+                                                            role_extraction_order=[0],
+                                                            stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_verb = keras_decode_verb.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    keras_decode_agent = build_real_filler_extractor_network(roles=dual_roles,
+                                                             fillers=fillers,
+                                                             tree_shape=syntax_tree,
+                                                             role_extraction_order=[1, 0],
+                                                             stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_agent = keras_decode_agent.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    keras_decode_patient = build_real_filler_extractor_network(roles=dual_roles,
+                                                               fillers=fillers,
+                                                               tree_shape=syntax_tree,
+                                                               role_extraction_order=[1, 1],
+                                                               stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_patient = keras_decode_patient.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    return {
+        'A': extracted_agent,
+        'P': extracted_patient,
+        'V': extracted_verb,
+    }
+
+
+def check_active_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
+    tree_for_unshift = flattenize_per_tensor_representation(encoded_sentence)
+    extracted_semantic_tree = ap_net.predict_on_batch([
+        tree_for_unshift
+    ])
+    tensor_repr = extract_per_level_tensor_representation_after_shift(extracted_semantic_tree,
+                                                                      max_tree_depth=2,
+                                                                      role_shape=roles[0].shape,
+                                                                      filler_shape=fillers[0].shape)
+    syntax_tree = reshape_to_satisfy_max_depth_after_shift(tensor_repr,
+                                                           3,
+                                                           roles[0].shape,
+                                                           fillers[0].shape)
+    print('Extracted semantic tree')
+
+    keras_decode_verb = build_real_filler_extractor_network(roles=dual_roles,
+                                                            fillers=fillers,
+                                                            tree_shape=syntax_tree,
+                                                            role_extraction_order=[0],
+                                                            stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_verb = keras_decode_verb.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    keras_decode_agent = build_real_filler_extractor_network(roles=dual_roles,
+                                                             fillers=fillers,
+                                                             tree_shape=syntax_tree,
+                                                             role_extraction_order=[1, 0],
+                                                             stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_agent = keras_decode_agent.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    keras_decode_patient = build_real_filler_extractor_network(roles=dual_roles,
+                                                               fillers=fillers,
+                                                               tree_shape=syntax_tree,
+                                                               role_extraction_order=[1, 1],
+                                                               stop_level=1)
+
+    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    extracted_patient = keras_decode_patient.predict_on_batch([
+        tree_for_unshift
+    ])
+
+    return {
+        'A': extracted_agent,
+        'P': extracted_patient,
+        'V': extracted_verb,
+    }
+
+
+def encode_active_voice_sentence(roles, fillers, fillers_order):
+    MAX_TREE_DEPTH = 4
+    SINGLE_ROLE_SHAPE = roles[0].shape
+    SINGLE_FILLER_SHAPE = fillers[0].shape
+
+    fillers_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH,
+                                     role_shape=SINGLE_ROLE_SHAPE,
+                                     filler_shape=SINGLE_FILLER_SHAPE)
+
+    keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
+
+    t_V_r0_P_r1 = elementary_join(joiner_network=keras_joiner,
+                                  input_structure_max_shape=fillers_shapes,
+                                  basic_roles=roles,
+                                  basic_fillers=fillers,
+                                  subtrees=(
+                                      get_filler_by(name='V', order=fillers_order,
+                                                    fillers=fillers),
+                                      get_filler_by(name='P', order=fillers_order,
+                                                    fillers=fillers)
+                                  ))
+    print('calculated cons(V,P)')
+
+    t_active_voice = elementary_join(joiner_network=keras_joiner,
+                                     input_structure_max_shape=fillers_shapes,
+                                     basic_roles=roles,
+                                     basic_fillers=fillers,
+                                     subtrees=(
+                                         get_filler_by(name='A', order=fillers_order, fillers=fillers),
+                                         t_V_r0_P_r1
+                                     ))
+    print('calculated cons(A,cons(V,P))')
+    print('Found tensor representation of the Active Voice sentence')
+    return t_active_voice
+
+
+def encode_passive_voice_sentence(roles, fillers, fillers_order):
+    MAX_TREE_DEPTH = 4
+    SINGLE_ROLE_SHAPE = roles[0].shape
+    SINGLE_FILLER_SHAPE = fillers[0].shape
+
+    fillers_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH,
+                                     role_shape=SINGLE_ROLE_SHAPE,
+                                     filler_shape=SINGLE_FILLER_SHAPE)
+
+    keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
+
+    t_by_r0_A_r1 = elementary_join(joiner_network=keras_joiner,
+                                   input_structure_max_shape=fillers_shapes,
+                                   basic_roles=roles,
+                                   basic_fillers=fillers,
+                                   subtrees=(
+                                       get_filler_by(name='by', order=fillers_order, fillers=fillers),
+                                       get_filler_by(name='A', order=fillers_order, fillers=fillers)
+                                   ))
+    print('calculated cons(by,A)')
+
+    t_Aux_r0_V_r1 = elementary_join(joiner_network=keras_joiner,
+                                    input_structure_max_shape=fillers_shapes,
+                                    basic_roles=roles,
+                                    basic_fillers=fillers,
+                                    subtrees=(
+                                        get_filler_by(name='Aux', order=fillers_order, fillers=fillers),
+                                        get_filler_by(name='V', order=fillers_order, fillers=fillers)
+                                    ))
+    print('calculated cons(Aux,V)')
+
+    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = elementary_join(joiner_network=keras_joiner,
+                                                       input_structure_max_shape=fillers_shapes,
+                                                       basic_roles=roles,
+                                                       basic_fillers=fillers,
+                                                       subtrees=(
+                                                           t_Aux_r0_V_r1,
+                                                           t_by_r0_A_r1
+                                                       ))
+    print('calculated cons(cons(Aux,V), cons(by,A))')
+
+    t_passive_voice = elementary_join(joiner_network=keras_joiner,
+                                      input_structure_max_shape=fillers_shapes,
+                                      basic_roles=roles,
+                                      basic_fillers=fillers,
+                                      subtrees=(
+                                          get_filler_by(name='P',
+                                                        order=fillers_order,
+                                                        fillers=fillers),
+                                          t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1
+                                      ))
+    print('calculated cons(P, cons(cons(Aux,V), cons(by,A)))')
+    print('Found tensor representation of the Passive Voice sentence')
+    return t_passive_voice
+
+
 if __name__ == '__main__':
     print('Hello, Active-Passive Net')
 
@@ -137,6 +339,7 @@ if __name__ == '__main__':
         [10, 0],  # r_0
         [0, 5],  # r_1
     ])
+    dual_basic_roles_case_1 = np.linalg.inv(roles)
     mapping_case_active = {
         'A': [0],
         'V': [0, 1],
@@ -157,79 +360,13 @@ if __name__ == '__main__':
     SINGLE_ROLE_SHAPE = roles[0].shape
     SINGLE_FILLER_SHAPE = fillers[0].shape
 
-    fillers_shapes = generate_shapes(max_tree_depth=MAX_TREE_DEPTH,
-                                     role_shape=SINGLE_ROLE_SHAPE,
-                                     filler_shape=SINGLE_FILLER_SHAPE)
+    t_active_voice = encode_active_voice_sentence(roles=roles,
+                                                  fillers=fillers,
+                                                  fillers_order=order_case_active)
+    t_passive_voice = encode_passive_voice_sentence(roles=roles,
+                                                    fillers=fillers,
+                                                    fillers_order=order_case_passive)
 
-    keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
-
-    t_V_r0_P_r1 = elementary_join(joiner_network=keras_joiner,
-                                  input_structure_max_shape=fillers_shapes,
-                                  basic_roles=roles,
-                                  basic_fillers=fillers,
-                                  subtrees=(
-                                      get_filler_by(name='V', order=order_case_active,
-                                                    fillers=fillers),
-                                      get_filler_by(name='P', order=order_case_active,
-                                                    fillers=fillers)
-                                  ))
-    print('calculated cons(V,P)')
-
-    t_active_voice = elementary_join(joiner_network=keras_joiner,
-                                     input_structure_max_shape=fillers_shapes,
-                                     basic_roles=roles,
-                                     basic_fillers=fillers,
-                                     subtrees=(
-                                         get_filler_by(name='A', order=order_case_active, fillers=fillers),
-                                         t_V_r0_P_r1
-                                     ))
-    print('calculated cons(A,cons(V,P))')
-    print('Found tensor representation of the Active Voice sentence')
-
-    t_by_r0_A_r1 = elementary_join(joiner_network=keras_joiner,
-                                   input_structure_max_shape=fillers_shapes,
-                                   basic_roles=roles,
-                                   basic_fillers=fillers,
-                                   subtrees=(
-                                       get_filler_by(name='by', order=order_case_passive, fillers=fillers),
-                                       get_filler_by(name='A', order=order_case_passive, fillers=fillers)
-                                   ))
-    print('calculated cons(by,A)')
-
-    t_Aux_r0_V_r1 = elementary_join(joiner_network=keras_joiner,
-                                    input_structure_max_shape=fillers_shapes,
-                                    basic_roles=roles,
-                                    basic_fillers=fillers,
-                                    subtrees=(
-                                        get_filler_by(name='Aux', order=order_case_passive, fillers=fillers),
-                                        get_filler_by(name='V', order=order_case_passive, fillers=fillers)
-                                    ))
-    print('calculated cons(Aux,V)')
-
-    t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1 = elementary_join(joiner_network=keras_joiner,
-                                                       input_structure_max_shape=fillers_shapes,
-                                                       basic_roles=roles,
-                                                       basic_fillers=fillers,
-                                                       subtrees=(
-                                                           t_Aux_r0_V_r1,
-                                                           t_by_r0_A_r1
-                                                       ))
-    print('calculated cons(cons(Aux,V), cons(by,A))')
-
-    t_passive_voice = elementary_join(joiner_network=keras_joiner,
-                                      input_structure_max_shape=fillers_shapes,
-                                      basic_roles=roles,
-                                      basic_fillers=fillers,
-                                      subtrees=(
-                                          get_filler_by(name='P',
-                                                        order=order_case_passive,
-                                                        fillers=fillers),
-                                          t_Aux_r0r0_V_r1r0_by_r0r1_A_r1r1
-                                      ))
-    print('calculated cons(P, cons(cons(Aux,V), cons(by,A)))')
-    print('Found tensor representation of the Passive Voice sentence')
-
-    dual_basic_roles_case_1 = np.linalg.inv(roles)
     fillers_shapes_unshift = generate_shapes_for_unshift(max_tree_depth=MAX_TREE_DEPTH - 1,
                                                          role_shape=SINGLE_ROLE_SHAPE,
                                                          filler_shape=SINGLE_FILLER_SHAPE)
@@ -291,55 +428,14 @@ if __name__ == '__main__':
                                                                 fillers=fillers,
                                                                 tree_shape=t_passive_voice)
 
-    tree_for_unshift = flattenize_per_tensor_representation(t_passive_voice)
-    extracted_semantic_tree = keras_active_passive_network.predict_on_batch([
-        tree_for_unshift
-    ])
-    tensor_repr = extract_per_level_tensor_representation_after_shift(extracted_semantic_tree,
-                                                                      max_tree_depth=2,
-                                                                      role_shape=roles[0].shape,
-                                                                      filler_shape=fillers[0].shape)
-    syntax_tree = reshape_to_satisfy_max_depth_after_shift(tensor_repr,
-                                                           3,
-                                                           roles[0].shape,
-                                                           fillers[0].shape)
-    print('Extracted semantic tree')
+    check_passive_case(ap_net=keras_active_passive_network,
+                       encoded_sentence=t_passive_voice,
+                       roles=roles,
+                       fillers=fillers,
+                       dual_roles=dual_basic_roles_case_1)
 
-    keras_decode_verb = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
-                                                               fillers=fillers,
-                                                               tree_shape=syntax_tree,
-                                                               role_extraction_order=[0],
-                                                               stop_level=1)
-
-    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
-    extracted_verb = keras_decode_verb.predict_on_batch([
-        tree_for_unshift
-    ])
-
-    print(extracted_verb)
-
-    keras_decode_agent = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
-                                                               fillers=fillers,
-                                                               tree_shape=syntax_tree,
-                                                               role_extraction_order=[1,0],
-                                                               stop_level=1)
-
-    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
-    extracted_agent = keras_decode_agent.predict_on_batch([
-        tree_for_unshift
-    ])
-
-    print(extracted_agent)
-
-    keras_decode_patient = build_real_filler_extractor_network(roles=dual_basic_roles_case_1,
-                                                               fillers=fillers,
-                                                               tree_shape=syntax_tree,
-                                                               role_extraction_order=[1,1],
-                                                               stop_level=1)
-
-    tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
-    extracted_patient = keras_decode_patient.predict_on_batch([
-        tree_for_unshift
-    ])
-
-    print(extracted_patient)
+    check_active_case(ap_net=keras_active_passive_network,
+                      encoded_sentence=t_active_voice,
+                      roles=roles,
+                      fillers=fillers,
+                      dual_roles=dual_basic_roles_case_1)

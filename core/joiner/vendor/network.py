@@ -20,8 +20,8 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     for shape in fillers_shapes:
         i = Input(shape=(*shape[1:],), batch_shape=(*shape,))
         subtree_as_inputs.append(i)
-    reshape_zero_level = Reshape((1,1,*fillers_shapes[0]))(subtree_as_inputs[0])
-    reshape_first_level = Reshape((1,*fillers_shapes[1]))(subtree_as_inputs[1])
+    reshape_zero_level = Reshape((1, 1, *fillers_shapes[0]))(subtree_as_inputs[0])
+    reshape_first_level = Reshape((1, *fillers_shapes[1]))(subtree_as_inputs[1])
     inputs_before_flattens = [
         reshape_zero_level,
         reshape_first_level,
@@ -61,6 +61,32 @@ def shift_matrix(role, filler_size, max_depth, name):
     return res_matrix
 
 
+def build_join_branch(roles, fillers_shapes):
+    filler_len = fillers_shapes[0][1]
+    max_depth = len(fillers_shapes)
+    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)', shift_matrix)
+    left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
+
+    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)', shift_matrix)
+    right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, right_shift_input)
+
+    sum_layer = Add()([
+        left_matmul_layer,
+        right_matmul_layer
+    ])
+
+    return (
+        (
+            left_shift_input,
+            right_shift_input
+        ),
+        (
+            left_inputs,
+            right_inputs
+        )
+    ), sum_layer
+
+
 def build_tree_joiner_network(roles, fillers_shapes):
     """
     Building the following network.
@@ -75,25 +101,15 @@ def build_tree_joiner_network(roles, fillers_shapes):
     :param fillers_shapes:
     :return:
     """
-    filler_len = fillers_shapes[0][1]
-    max_depth = len(fillers_shapes)
 
-    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)', shift_matrix)
-    left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
-
-    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)', shift_matrix)
-    right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, right_shift_input)
-
-    sum_layer = Add()([
-        left_matmul_layer,
-        right_matmul_layer
-    ])
+    inputs, output = build_join_branch(roles, fillers_shapes)
+    const_inputs, variable_inputs = inputs
+    left_inputs, right_inputs = variable_inputs
 
     return Model(
         inputs=[
-            left_shift_input,
-            right_shift_input,
+            *const_inputs,
             *left_inputs,
             *right_inputs
         ],
-        outputs=sum_layer)
+        outputs=output)

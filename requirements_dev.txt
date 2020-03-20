@@ -1,0 +1,4 @@
+coverage==4.0.3
+pydot==1.4.1
+python-coveralls==2.9.1
+pygraphviz==1.5

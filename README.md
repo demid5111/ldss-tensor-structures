@@ -8,15 +8,35 @@
 
 ## Setting up
 
-1. Install dependencies:
-```
-pip3 install -r requirements.txt
-```
+1. If you configure for the first time and do not have a `venv` folder, create virtual environment. 
+   Instruction for Linux systems:
 
-2. (Optionally]) Install graphviz:
+   ```bash
+   python3 -m pip install --user virtualenv
+   python3 -m virtualenv -p `which python3` venv
+   ```
+
+2. Activate environment:
+
+   ```bash
+   source venv/bin/activate
+   ```
+
+3. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. (Optionally]) Install graphviz:
     1. macOS:
         - `brew install graphviz`
         - `export PATH=/usr/local/bin/dot:$PATH`
+       
+     
+    ```bash
+    pip install -r requirements_dev.txt
+    ```
 
 ## Running tests
 

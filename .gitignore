@@ -6,6 +6,7 @@
 htmlcov
 
 # Python-specific
+venv
 *.pyc
 
 *.dot

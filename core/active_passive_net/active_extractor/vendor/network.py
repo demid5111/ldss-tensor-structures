@@ -1,7 +1,6 @@
-import numpy as np
 import keras.backend as K
+import numpy as np
 from keras import Input
-
 from keras.layers import Lambda, Cropping1D, Concatenate
 
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
@@ -11,10 +10,17 @@ from core.unshifter.vendor.network import unshift_matrix
 
 def crop_tensor(layer, role, filler_len, stop_level):
     _, flattened_num_elements = unshift_matrix(role, filler_len, stop_level).shape
-    # TODO: insert cropping here
-    reshape_for_crop = Lambda(lambda x: K.tf.reshape(x, (1, flattened_num_elements + filler_len, 1)))(layer)
-    clip_first_level = Cropping1D(cropping=(0, flattened_num_elements))(reshape_for_crop)
-    return Lambda(lambda x: K.tf.reshape(x, (filler_len, 1)))(clip_first_level)
+    return custom_cropping_layer(input_layer=layer,
+                                 crop_from_beginning=0,
+                                 crop_from_end=flattened_num_elements,
+                                 input_tensor_length=flattened_num_elements + filler_len,
+                                 final_tensor_length=filler_len)
+
+
+def custom_cropping_layer(input_layer, crop_from_beginning, crop_from_end, input_tensor_length, final_tensor_length):
+    reshape_for_crop = Lambda(lambda x: K.tf.reshape(x, (1, input_tensor_length, 1)))(input_layer)
+    clip_first_level = Cropping1D(cropping=(crop_from_beginning, crop_from_end))(reshape_for_crop)
+    return Lambda(lambda x: K.tf.reshape(x, (final_tensor_length, 1)))(clip_first_level)
 
 
 def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_roles, filler_len, max_depth):

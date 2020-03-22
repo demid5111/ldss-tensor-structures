@@ -1,8 +1,10 @@
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
-from demo.active_passive_net import elementary_join, get_filler_by
+from core.peano.increment.vendor.network import build_increment_network
+from demo.active_passive_net import elementary_join, get_filler_by, flattenize_per_tensor_representation
 from demo.shifting_structure import generate_shapes
+from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
 
 
 def number_to_tree(target_number, joiner_network, maximum_shapes, fillers, roles, order_case_active):
@@ -42,10 +44,12 @@ if __name__ == '__main__':
     fillers = np.array([
         [7, 0, 0, 0, 0],  # A
     ])
+
     roles = np.array([
         [10, 0],  # r_0
         [0, 5],  # r_1
     ])
+    dual_basic_roles_case_1 = np.linalg.inv(roles)
     order_case_active = ['A', ]
 
     MAX_NUMBER = 4
@@ -59,6 +63,32 @@ if __name__ == '__main__':
 
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
+    print('Potentially, this is representation of number greater than 1')
+    TARGET_NUMBER = 3
+    new_number_three = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+
+    TARGET_NUMBER = 1
+    new_number_one = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+
+    keras_increment_network = build_increment_network(roles=roles,
+                                                      fillers=fillers,
+                                                      dual_roles=dual_basic_roles_case_1,
+                                                      max_depth=MAX_TREE_DEPTH)
+    print('Built increment network')
+
+    three_unshifted = flattenize_per_tensor_representation(new_number_three)
+    one_unshifted = flattenize_per_tensor_representation(new_number_one)
+    new_number_four = keras_increment_network.predict_on_batch([
+        three_unshifted,
+        one_unshifted
+    ])
+
+    print(new_number_four)
+    four_tree = extract_per_level_tensor_representation_after_unshift(new_number_four, MAX_TREE_DEPTH,
+                                                                      SINGLE_ROLE_SHAPE,
+                                                                      SINGLE_FILLER_SHAPE)
+    print(four_tree)
+
     TARGET_NUMBER = 4
-    print('Potentially, this is representation of number 4')
-    print(number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active))
+    new_number_four = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+    print(new_number_four)

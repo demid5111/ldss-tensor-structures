@@ -64,8 +64,8 @@ if __name__ == '__main__':
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
     print('Potentially, this is representation of number greater than 1')
-    TARGET_NUMBER = 3
-    new_number_three = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+    TARGET_NUMBER = 2
+    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
 
     TARGET_NUMBER = 1
     new_number_one = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
@@ -76,10 +76,10 @@ if __name__ == '__main__':
                                                       max_depth=MAX_TREE_DEPTH)
     print('Built increment network')
 
-    three_unshifted = flattenize_per_tensor_representation(new_number_three)
+    two_unshifted = flattenize_per_tensor_representation(new_number_two)
     one_unshifted = flattenize_per_tensor_representation(new_number_one)
     new_number_four = keras_increment_network.predict_on_batch([
-        three_unshifted,
+        one_unshifted,
         one_unshifted
     ])
 
@@ -92,3 +92,7 @@ if __name__ == '__main__':
     TARGET_NUMBER = 4
     new_number_four = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
     print(new_number_four)
+
+    TARGET_NUMBER = 2
+    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+    print(new_number_two)

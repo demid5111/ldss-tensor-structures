@@ -1,6 +1,7 @@
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
+from core.peano.decode.vendor.network import build_decode_number_network
 from core.peano.increment.vendor.network import build_increment_network
 from demo.active_passive_net import flattenize_per_tensor_representation, prepare_input, get_filler_by, elementary_join
 from demo.shifting_structure import generate_shapes
@@ -48,6 +49,29 @@ def get_max_tree_depth(maximum_number):
     return maximum_number + 1
 
 
+def decode_number(number_tree, fillers, dual_roles, max_depth):
+    is_not_zero = True
+    current_depth = max_depth
+    current_number_tree = number_tree
+    acc = 0
+    while is_not_zero:
+        keras_number_decoder = build_decode_number_network(fillers=fillers,
+                                                           dual_roles=dual_roles,
+                                                           max_depth=current_depth)
+
+        flattened_number = flattenize_per_tensor_representation(current_number_tree)
+        current_number_tree, is_not_zero_output = keras_number_decoder.predict_on_batch([
+            *flattened_number
+        ])
+
+        acc += 1
+        current_depth -= 1
+        if is_not_zero_output[0][0] == 0:
+            is_not_zero = False
+
+    return acc
+
+
 if __name__ == '__main__':
     print('need to get representation of the 1')
 
@@ -74,8 +98,8 @@ if __name__ == '__main__':
 
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
-    TARGET_NUMBER = 1
-    new_number_one = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+    a = 1
+    new_number_one = number_to_tree(a, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
     one_unshifted = flattenize_per_tensor_representation(new_number_one)
 
     keras_increment_network = build_increment_network(roles=roles,
@@ -91,15 +115,13 @@ if __name__ == '__main__':
     ])
 
     print(new_number)
-    four_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
-                                                                      SINGLE_ROLE_SHAPE,
-                                                                      SINGLE_FILLER_SHAPE)
-    print(four_tree)
+    new_number_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
+                                                                            SINGLE_ROLE_SHAPE,
+                                                                            SINGLE_FILLER_SHAPE)
+    print(new_number)
 
-    TARGET_NUMBER = 0
-    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
-    print(new_number_two)
-
-    TARGET_NUMBER = 2
-    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
-    print(new_number_two)
+    result_number = decode_number(number_tree=new_number_tree,
+                                  fillers=fillers,
+                                  dual_roles=dual_basic_roles_case_1,
+                                  max_depth=MAX_TREE_DEPTH)
+    print('After incrementing {} + {}, get {}'.format(a, a, result_number))

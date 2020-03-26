@@ -47,7 +47,7 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape
     reshape_for_pool = Lambda(lambda x: K.tf.reshape(x, (1, target_elements, 1)))(one_tensor_output)
     global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
-    return const_inputs, Lambda(normalization)(global_max_pool)
+    return const_inputs, Lambda(normalization)(global_max_pool), one_tensor_output
 
 
 def check_if_zero_branch(flag_input):
@@ -76,13 +76,13 @@ def single_sum_block(decrementing_input, incrementing_input, constant_input_one,
     )
     next_number_output = Concatenate(axis=0)([constant_input_filler, next_number])
 
-    const_first_operand_inputs, is_first_operand_not_zero = check_if_not_zero_branch(
+    const_first_operand_inputs, is_first_operand_not_zero, _ = check_if_not_zero_branch(
         decrementing_input=decrementing_input,
         role=dual_roles[1],
         filler_len=filler_len,
         max_depth=max_depth,
         block_id=block_id + 1)
-    const_second_operand_inputs, is_second_operand_not_zero = check_if_not_zero_branch(
+    const_second_operand_inputs, is_second_operand_not_zero, _ = check_if_not_zero_branch(
         decrementing_input=incrementing_input,
         role=dual_roles[1],
         filler_len=filler_len,

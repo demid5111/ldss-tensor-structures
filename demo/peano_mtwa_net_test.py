@@ -1,13 +1,13 @@
 import unittest
+from typing import Tuple
 
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.peano.increment.vendor.network import build_increment_network
 from demo.active_passive_net import flattenize_per_tensor_representation
-from demo.peano_mtwa_net import number_to_tree, get_max_tree_depth
+from demo.peano_mtwa_net import number_to_tree, get_max_tree_depth, decode_number
 from demo.shifting_structure import generate_shapes
-# Input information
 from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
 
 fillers = np.array([
@@ -24,8 +24,18 @@ SINGLE_ROLE_SHAPE = roles[0].shape
 SINGLE_FILLER_SHAPE = fillers[0].shape
 
 
-class IncrementTest(unittest.TestCase):
-    def sum(self, a, b, max_number=None) -> list:
+class TensorAssertions:
+    def assertTensorsEqual(self, expected, actual):
+        assert len(expected) == len(actual)
+        for level_idx in range(len(actual)):
+            np.testing.assert_array_equal(
+                actual[level_idx],
+                expected[level_idx]
+            )
+
+
+class IncrementTest(unittest.TestCase, TensorAssertions):
+    def sum(self, a, b, max_number=None) -> Tuple[any, int]:
         if max_number is None:
             max_number = a + b
 
@@ -60,11 +70,13 @@ class IncrementTest(unittest.TestCase):
 
         return extract_per_level_tensor_representation_after_unshift(new_number, max_tree_depth,
                                                                      SINGLE_ROLE_SHAPE,
-                                                                     SINGLE_FILLER_SHAPE)
+                                                                     SINGLE_FILLER_SHAPE), \
+               max_tree_depth
 
     def test_1_plus_1(self):
-        new_number_tree = self.sum(1, 1)
+        new_number_tree, max_depth = self.sum(1, 1)
 
+        expected_numeric = 2
         expected = [
             np.array([
                 [
@@ -110,15 +122,18 @@ class IncrementTest(unittest.TestCase):
             ], dtype=np.float32)
         ]
 
-        for level_idx in range(len(new_number_tree)):
-            np.testing.assert_array_equal(
-                new_number_tree[level_idx],
-                expected[level_idx]
-            )
+        self.assertTensorsEqual(expected, new_number_tree)
+
+        result_number = decode_number(number_tree=new_number_tree,
+                                      fillers=fillers,
+                                      dual_roles=dual_basic_roles_case_1,
+                                      max_depth=max_depth)
+        self.assertEqual(expected_numeric, result_number)
 
     def test_0_plus_1(self):
-        new_number_tree = self.sum(0, 1)
+        new_number_tree, max_depth = self.sum(0, 1)
 
+        expected_numeric = 1
         expected = [
             np.array([
                 [
@@ -140,15 +155,18 @@ class IncrementTest(unittest.TestCase):
             ], dtype=np.float32)
         ]
 
-        for level_idx in range(len(new_number_tree)):
-            np.testing.assert_array_equal(
-                new_number_tree[level_idx],
-                expected[level_idx]
-            )
+        self.assertTensorsEqual(expected, new_number_tree)
+
+        result_number = decode_number(number_tree=new_number_tree,
+                                      fillers=fillers,
+                                      dual_roles=dual_basic_roles_case_1,
+                                      max_depth=max_depth)
+        self.assertEqual(expected_numeric, result_number)
 
     def test_1_plus_0(self):
-        new_number_tree = self.sum(1, 0)
+        new_number_tree, max_depth = self.sum(1, 0)
 
+        expected_numeric = 1
         expected = [
             np.array([
                 [
@@ -170,15 +188,18 @@ class IncrementTest(unittest.TestCase):
             ], dtype=np.float32)
         ]
 
-        for level_idx in range(len(new_number_tree)):
-            np.testing.assert_array_equal(
-                new_number_tree[level_idx],
-                expected[level_idx]
-            )
+        self.assertTensorsEqual(expected, new_number_tree)
+
+        result_number = decode_number(number_tree=new_number_tree,
+                                      fillers=fillers,
+                                      dual_roles=dual_basic_roles_case_1,
+                                      max_depth=max_depth)
+        self.assertEqual(expected_numeric, result_number)
 
     def test_2_plus_2(self):
-        new_number_tree = self.sum(2, 2)
+        new_number_tree, max_depth = self.sum(2, 2)
 
+        expected_numeric = 3
         expected = [
             np.array([
                 [
@@ -407,8 +428,10 @@ class IncrementTest(unittest.TestCase):
             ], dtype=np.float32)
         ]
 
-        for level_idx in range(len(new_number_tree)):
-            np.testing.assert_array_equal(
-                new_number_tree[level_idx],
-                expected[level_idx]
-            )
+        self.assertTensorsEqual(expected, new_number_tree)
+
+        result_number = decode_number(number_tree=new_number_tree,
+                                      fillers=fillers,
+                                      dual_roles=dual_basic_roles_case_1,
+                                      max_depth=max_depth)
+        self.assertEqual(expected_numeric, result_number)

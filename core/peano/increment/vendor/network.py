@@ -7,7 +7,6 @@ from core.active_passive_net.active_extractor.vendor.network import custom_cropp
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch, normalization
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch
 from core.unshifter.vendor.network import unshift_matrix
-from demo.active_passive_net import elementary_join, get_filler_by
 
 
 def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth):
@@ -19,36 +18,6 @@ def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth)
         input_tensor_length=flattened_num_elements + filler_len,
         final_tensor_length=target_num_elements
     )
-
-
-def number_to_tree(target_number, joiner_network, maximum_shapes, fillers, roles, order_case_active):
-    one = get_filler_by(name='A', order=order_case_active, fillers=fillers)
-    for i in range(1):
-        # one is a result of two joins
-        # 1. join of filler and role_1 a.k.a zero representation
-        # 2. join of step 1 and role_1 a.k.a zero representation
-        one = elementary_join(joiner_network=joiner_network,
-                              input_structure_max_shape=maximum_shapes,
-                              basic_roles=roles,
-                              basic_fillers=fillers,
-                              subtrees=(
-                                  None,
-                                  one
-                              ))
-
-    number = one
-    for i in range(target_number - 1):
-        # easy as 2 is just one join of (one+one)
-        # easy as 3 is just two joins: (one+one)+one
-        number = elementary_join(joiner_network=joiner_network,
-                                 input_structure_max_shape=maximum_shapes,
-                                 basic_roles=roles,
-                                 basic_fillers=fillers,
-                                 subtrees=(
-                                     number,
-                                     one
-                                 ))
-    return number
 
 
 def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branch_id=1):

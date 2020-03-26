@@ -1,10 +1,44 @@
 import numpy as np
 
 from core.joiner.vendor.network import build_tree_joiner_network
-from core.peano.increment.vendor.network import build_increment_network, number_to_tree
-from demo.active_passive_net import flattenize_per_tensor_representation
+from core.peano.increment.vendor.network import build_increment_network
+from demo.active_passive_net import flattenize_per_tensor_representation, prepare_input, get_filler_by, elementary_join
 from demo.shifting_structure import generate_shapes
 from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
+
+
+def number_to_tree(target_number, joiner_network, maximum_shapes, fillers, roles, order_case_active):
+    if target_number == 0:
+        return prepare_input(None, maximum_shapes)
+
+    one = get_filler_by(name='A', order=order_case_active, fillers=fillers)
+    for i in range(1):
+        # one is a result of two joins
+        # 1. join of filler and role_1 a.k.a zero representation
+        # 2. join of step 1 and role_1 a.k.a zero representation
+        one = elementary_join(joiner_network=joiner_network,
+                              input_structure_max_shape=maximum_shapes,
+                              basic_roles=roles,
+                              basic_fillers=fillers,
+                              subtrees=(
+                                  None,
+                                  one
+                              ))
+
+    number = one
+    for i in range(target_number - 1):
+        # easy as 2 is just one join of (one+one)
+        # easy as 3 is just two joins: (one+one)+one
+        number = elementary_join(joiner_network=joiner_network,
+                                 input_structure_max_shape=maximum_shapes,
+                                 basic_roles=roles,
+                                 basic_fillers=fillers,
+                                 subtrees=(
+                                     number,
+                                     one
+                                 ))
+    return number
+
 
 if __name__ == '__main__':
     print('need to get representation of the 1')
@@ -32,10 +66,6 @@ if __name__ == '__main__':
 
     keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
-    print('Potentially, this is representation of number greater than 1')
-    TARGET_NUMBER = 2
-    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
-
     TARGET_NUMBER = 1
     new_number_one = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
     one_unshifted = flattenize_per_tensor_representation(new_number_one)
@@ -47,22 +77,17 @@ if __name__ == '__main__':
                                                       increment_value=one_unshifted)
     print('Built increment network')
 
-    two_unshifted = flattenize_per_tensor_representation(new_number_two)
-    new_number_four = keras_increment_network.predict_on_batch([
+    new_number = keras_increment_network.predict_on_batch([
         one_unshifted,
         one_unshifted
     ])
 
-    print(new_number_four)
-    four_tree = extract_per_level_tensor_representation_after_unshift(new_number_four, MAX_TREE_DEPTH,
+    print(new_number)
+    four_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
                                                                       SINGLE_ROLE_SHAPE,
                                                                       SINGLE_FILLER_SHAPE)
     print(four_tree)
 
-    TARGET_NUMBER = 4
-    new_number_four = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
-    print(new_number_four)
-
-    TARGET_NUMBER = 2
+    TARGET_NUMBER = 0
     new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
     print(new_number_two)

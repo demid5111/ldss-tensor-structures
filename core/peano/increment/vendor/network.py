@@ -76,26 +76,36 @@ def single_sum_block(decrementing_input, incrementing_input, constant_input_one,
     )
     next_number_output = Concatenate(axis=0)([constant_input_filler, next_number])
 
-    const_inputs, is_not_zero = check_if_not_zero_branch(decrementing_input=decrementing_input,
-                                                         role=dual_roles[1],
-                                                         filler_len=filler_len,
-                                                         max_depth=max_depth,
-                                                         block_id=block_id)
+    const_first_operand_inputs, is_first_operand_not_zero = check_if_not_zero_branch(
+        decrementing_input=decrementing_input,
+        role=dual_roles[1],
+        filler_len=filler_len,
+        max_depth=max_depth,
+        block_id=block_id + 1)
+    const_second_operand_inputs, is_second_operand_not_zero = check_if_not_zero_branch(
+        decrementing_input=incrementing_input,
+        role=dual_roles[1],
+        filler_len=filler_len,
+        max_depth=max_depth,
+        block_id=block_id + 2)
+    is_both_not_zero = Multiply()([is_first_operand_not_zero, is_second_operand_not_zero])
+    is_first_operand_not_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])(
+        [next_number_output, is_both_not_zero])
 
-    is_not_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([next_number_output, is_not_zero])
+    const_input, is_any_zero = check_if_zero_branch(is_both_not_zero)
+    lengthened_input = Concatenate(axis=0)([increment_value, constant_input_one])
+    is_any_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])(
+        [lengthened_input, is_any_zero])
 
-    const_input, is_zero = check_if_zero_branch(is_not_zero)
-    lengthened_input = Concatenate(axis=0)([incrementing_input, constant_input_one])
-    is_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([lengthened_input, is_zero])
-
-    sum_branches = Add()([is_zero_branch, is_not_zero_branch])
+    sum_branches = Add()([is_any_zero_branch, is_first_operand_not_zero_branch])
 
     cropped_number = make_output_same_length_as_input(layer_to_crop=sum_branches,
                                                       role=dual_roles[1],
                                                       filler_len=filler_len,
                                                       max_depth=max_depth)
     return [
-               *const_inputs,
+               *const_first_operand_inputs,
+               *const_second_operand_inputs,
                const_input,
                *next_number_const_inputs
            ], cropped_number

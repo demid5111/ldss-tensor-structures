@@ -40,6 +40,14 @@ def number_to_tree(target_number, joiner_network, maximum_shapes, fillers, roles
     return number
 
 
+def get_max_tree_depth(maximum_number):
+    """
+    Returns the depth of the tree that is enough to represent maximum_number
+    one is represented by one nesting level, therefore we add 1
+    """
+    return maximum_number + 1
+
+
 if __name__ == '__main__':
     print('need to get representation of the 1')
 
@@ -55,8 +63,8 @@ if __name__ == '__main__':
     dual_basic_roles_case_1 = np.linalg.inv(roles)
     order_case_active = ['A', ]
 
-    MAX_NUMBER = 4
-    MAX_TREE_DEPTH = MAX_NUMBER + 2  # as one is already represented by structure with 2 levels
+    MAX_NUMBER = 2
+    MAX_TREE_DEPTH = get_max_tree_depth(MAX_NUMBER)  # as one is already represented by structure with 2 levels
     SINGLE_ROLE_SHAPE = roles[0].shape
     SINGLE_FILLER_SHAPE = fillers[0].shape
 
@@ -89,5 +97,9 @@ if __name__ == '__main__':
     print(four_tree)
 
     TARGET_NUMBER = 0
+    new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
+    print(new_number_two)
+
+    TARGET_NUMBER = 2
     new_number_two = number_to_tree(TARGET_NUMBER, keras_joiner, fillers_shapes, fillers, roles, order_case_active)
     print(new_number_two)

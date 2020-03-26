@@ -1,8 +1,7 @@
+import keras.backend as K
 import numpy as np
 from keras import Input
-
 from keras.layers import Lambda, Cropping1D, Add, Concatenate
-import keras.backend as K
 
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
 from core.joiner.vendor.network import constant_input, mat_mul, shift_matrix
@@ -90,7 +89,10 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     # make filler of verb of the same depth - make fake constant layer
     np_constant = np.zeros((filler_len, 1))
     tf_constant = K.constant(np_constant)
-    const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
+    const_fake_extender = Input(tensor=tf_constant,
+                                batch_shape=np_constant.shape,
+                                shape=np_constant.shape,
+                                dtype='int32',
                                 name='passive_fake_extender_verb_agent')
     concatenate_verb = Concatenate(axis=0)([verb_extraction_output, const_fake_extender, const_fake_extender])
     # TODO: why is there a constant 3?

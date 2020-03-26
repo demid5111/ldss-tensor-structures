@@ -5,6 +5,37 @@ from core.active_passive_net.active_extractor.vendor.network import custom_cropp
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch
 from core.unshifter.vendor.network import unshift_matrix
+from demo.active_passive_net import elementary_join, get_filler_by
+
+
+def number_to_tree(target_number, joiner_network, maximum_shapes, fillers, roles, order_case_active):
+    one = get_filler_by(name='A', order=order_case_active, fillers=fillers)
+    for i in range(1):
+        # one is a result of two joins
+        # 1. join of filler and role_1 a.k.a zero representation
+        # 2. join of step 1 and role_1 a.k.a zero representation
+        one = elementary_join(joiner_network=joiner_network,
+                              input_structure_max_shape=maximum_shapes,
+                              basic_roles=roles,
+                              basic_fillers=fillers,
+                              subtrees=(
+                                  None,
+                                  one
+                              ))
+
+    number = one
+    for i in range(target_number - 1):
+        # easy as 2 is just one join of (one+one)
+        # easy as 3 is just two joins: (one+one)+one
+        number = elementary_join(joiner_network=joiner_network,
+                                 input_structure_max_shape=maximum_shapes,
+                                 basic_roles=roles,
+                                 basic_fillers=fillers,
+                                 subtrees=(
+                                     number,
+                                     one
+                                 ))
+    return number
 
 
 def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branch_id=1):
@@ -23,7 +54,7 @@ def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branc
 
 
 def single_sum_block(decrementing_input, incrementing_input, constant_input_one, constant_input_filler, roles,
-                     filler_len, dual_roles, max_depth):
+                     filler_len, dual_roles, max_depth, increment_value):
     block_id = 1
 
     const_inputs, one_tensor_output = build_extract_branch(
@@ -42,7 +73,7 @@ def single_sum_block(decrementing_input, incrementing_input, constant_input_one,
         max_depth=max_depth,
         inputs=[
             incrementing_input,
-            concatenate_one
+            increment_value
         ],
         prefix='cons_'.format(block_id)
     )
@@ -62,7 +93,7 @@ def single_sum_block(decrementing_input, incrementing_input, constant_input_one,
            ], cropped_number
 
 
-def build_increment_network(roles, fillers, dual_roles, max_depth):
+def build_increment_network(roles, fillers, dual_roles, max_depth, increment_value):
     filler_len = fillers[0].shape[0]
 
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
@@ -76,6 +107,9 @@ def build_increment_network(roles, fillers, dual_roles, max_depth):
     tmp_reshaped_fake, const_one = custom_constant_layer(const_size=input_num_elements + filler_len, name='const_one')
 
     tmp_reshaped_fake_filler, const_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
+    tmp_reshaped_increment, const_increment = custom_constant_layer(const_size=filler_len,
+                                                                    name='const_increment',
+                                                                    np_constant=increment_value)
 
     inputs, output = single_sum_block(decrementing_input=flattened_decrementing_input,
                                       incrementing_input=flattened_incrementing_input,
@@ -84,7 +118,8 @@ def build_increment_network(roles, fillers, dual_roles, max_depth):
                                       roles=roles,
                                       filler_len=filler_len,
                                       dual_roles=dual_roles,
-                                      max_depth=max_depth)
+                                      max_depth=max_depth,
+                                      increment_value=tmp_reshaped_increment)
 
     return Model(
         inputs=[
@@ -92,6 +127,7 @@ def build_increment_network(roles, fillers, dual_roles, max_depth):
             flattened_incrementing_input,
             *inputs,
             const_one,
-            const_filler
+            const_filler,
+            const_increment
         ],
         outputs=output)

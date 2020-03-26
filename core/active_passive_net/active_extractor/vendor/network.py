@@ -23,12 +23,15 @@ def custom_cropping_layer(input_layer, crop_from_beginning, crop_from_end, input
     return Lambda(lambda x: K.tf.reshape(x, (final_tensor_length, 1)))(clip_first_level)
 
 
-def custom_constant_layer(const_size, name):
-    np_constant = np.zeros((const_size, 1))
+def custom_constant_layer(const_size, name, np_constant=None):
+    if np_constant is None:
+        np_constant = np.zeros((const_size, 1))
+    else:
+        np_constant = np.reshape(np_constant, (*np_constant.shape, 1))
     tf_constant = K.constant(np_constant)
     const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32', name=name)
     # TODO: reshaping constant input??
-    return Lambda(lambda x: K.tf.reshape(x, (const_size, 1)))(const_fake_extender), const_fake_extender
+    return Lambda(lambda x: K.tf.reshape(x, np_constant.shape))(const_fake_extender), const_fake_extender
 
 
 def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_roles, filler_len, max_depth):

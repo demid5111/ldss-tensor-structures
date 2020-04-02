@@ -9,7 +9,7 @@ from core.unshifter.vendor.network import unshift_matrix
 def sum_block(incrementing_input, decrementing_input,
               increment_value, roles, dual_roles, filler_len, max_depth, block_id,
               left_shift_input, right_shift_input, constant_input_filler, constant_for_decrementing_input):
-    increment_const_inputs, output = increment_block(
+    increment_const_inputs, output, next_number = increment_block(
         incrementing_input=incrementing_input,
         increment_value=increment_value,
         roles=roles,
@@ -29,15 +29,16 @@ def sum_block(incrementing_input, decrementing_input,
         dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=block_id
+        block_id=block_id+1
     )
 
-    # decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
+    decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
 
     return (
                *increment_const_inputs,
                *const_condition_inputs
-           ), incremented_output, decremented_input
+           # ), output, output, next_number
+           ), incremented_output, decremented_output, next_number
 
 
 def build_sum_network(roles, fillers, dual_roles, max_depth):
@@ -45,8 +46,8 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
 
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_decrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
-    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
+    flattened_decrementing_input = Input(shape=(*shape,), batch_shape=(*shape,), name='left_operand')
+    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,), name='right_operand')
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,
@@ -58,7 +59,7 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
     target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth).shape
     tmp_reshaped_fake, const_one = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
 
-    sum_const_inputs, incremented_output, decremented_output = sum_block(
+    sum_const_inputs, incremented_output, decremented_output, next_number = sum_block(
         incrementing_input=flattened_incrementing_input,
         decrementing_input=flattened_decrementing_input,
         increment_value=tmp_reshaped_increment,
@@ -74,16 +75,17 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
 
     return Model(
         inputs=[
-            flattened_decrementing_input,
-            flattened_incrementing_input,
             left_shift_input,
             right_shift_input,
             const_increment,
             const_filler,
             const_one,
-            *sum_const_inputs
+            *sum_const_inputs,
+            flattened_decrementing_input,
+            flattened_incrementing_input,
         ],
         outputs=[
+            decremented_output,
             incremented_output,
-            decremented_output
+            next_number
         ])

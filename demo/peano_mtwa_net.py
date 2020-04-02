@@ -8,6 +8,24 @@ from core.utils import flattenize_per_tensor_representation
 from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
 
 
+def encode(number, max_depth, roles, fillers):
+    new_number_one = number_to_tree(number, max_depth, fillers, roles)
+    return flattenize_per_tensor_representation(new_number_one)
+
+
+def decode(network_layer, max_depth, dual_roles, fillers):
+    single_role_shape = dual_roles[0].shape
+    single_filler_shape = fillers[0].shape
+    new_number_tree = extract_per_level_tensor_representation_after_unshift(network_layer,
+                                                                            max_depth,
+                                                                            single_role_shape,
+                                                                            single_filler_shape)
+
+    return decode_number(number_tree=new_number_tree,
+                                  fillers=fillers,
+                                  dual_roles=dual_roles,
+                                  max_depth=max_depth)
+
 def decode_number(number_tree, fillers, dual_roles, max_depth):
     is_not_zero = True
     current_depth = max_depth
@@ -78,31 +96,21 @@ if __name__ == '__main__':
     MAX_NUMBER = 4
     MAX_TREE_DEPTH = get_max_tree_depth(MAX_NUMBER)
 
-    a = 1
-    new_number_one = number_to_tree(a, MAX_TREE_DEPTH, fillers, roles)
-    one_unshifted = flattenize_per_tensor_representation(new_number_one)
+    a = 2
+    a_encoded = encode(2, MAX_TREE_DEPTH, roles, fillers)
 
-    b = 2
-    new_number_two = number_to_tree(b, MAX_TREE_DEPTH, fillers, roles)
-    two_unshifted = flattenize_per_tensor_representation(new_number_one)
+    b = 1
+    b_encoded = encode(1, MAX_TREE_DEPTH, roles, fillers)
 
-    keras_sum_network = build_sum_network(roles=roles,
-                                          dual_roles=dual_basic_roles_case_1,
-                                          fillers=fillers,
-                                          max_depth=MAX_TREE_DEPTH)
+    keras_sum_network = build_sum_network(roles, fillers, dual_basic_roles_case_1, MAX_TREE_DEPTH)
     print('Built increment network')
 
-    incremented_number, decremented_number = keras_sum_network.predict_on_batch([
-        one_unshifted,
-        two_unshifted
+    decremented_number, incremented_number, next_number = keras_sum_network.predict_on_batch([
+        a_encoded,
+        b_encoded
     ])
 
-    new_number_tree = extract_per_level_tensor_representation_after_unshift(incremented_number, MAX_TREE_DEPTH,
-                                                                            SINGLE_ROLE_SHAPE,
-                                                                            SINGLE_FILLER_SHAPE)
+    c = decode(decremented_number, MAX_TREE_DEPTH, dual_basic_roles_case_1, fillers)
+    d = decode(incremented_number, MAX_TREE_DEPTH, dual_basic_roles_case_1, fillers)
 
-    result_number = decode_number(number_tree=new_number_tree,
-                                  fillers=fillers,
-                                  dual_roles=dual_basic_roles_case_1,
-                                  max_depth=MAX_TREE_DEPTH)
-    print('After {} + {}, get {}'.format(a, b, result_number))
+    print('After {} + {}, get {} + {}'.format(a, b, c, d))

@@ -117,9 +117,9 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=112
+        block_id=block_id
     )
-    return const_condition_inputs, output
+    return const_condition_inputs, output, next_number
 
 
 def constant_inputs_for_increment_block(roles, fillers, max_depth, block_id):

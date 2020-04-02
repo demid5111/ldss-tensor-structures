@@ -1,12 +1,10 @@
 from functools import reduce
 
 import numpy as np
-
+from keras import backend as K
 from keras.engine import Input
 from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
 from keras.models import Model
-
-from keras import backend as K
 
 from core.decoder.vendor.network import mat_transpose
 
@@ -39,7 +37,7 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
 def constant_input(role, filler_len, max_depth, name, matrix_creator):
     np_constant = matrix_creator(role, filler_len, max_depth, name)
     tf_constant = K.constant(np_constant)
-    return Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32', name=name)
+    return Input(tensor=tf_constant, batch_shape=np_constant.shape, shape=np_constant.shape, dtype='int32', name=name)
 
 
 def shift_matrix(role, filler_size, max_depth, name):
@@ -97,7 +95,6 @@ def build_tree_joiner_network(roles, fillers_shapes):
     >>> keras_joiner = None # some place in the main code after this function is called
     >>> plot_model(keras_joiner, to_file='keras_joiner.png')
 
-    :param roles_shape:
     :param fillers_shapes:
     :return:
     """

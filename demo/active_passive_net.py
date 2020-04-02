@@ -34,65 +34,15 @@ import numpy as np
 
 from core.active_passive_net.classifier.vendor.network import build_filler_extractor_network, \
     build_real_filler_extractor_network
+from core.active_passive_net.utils import elementary_join
 from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
+from core.utils import flattenize_per_tensor_representation, get_filler_by
 from demo.shifting_structure import generate_shapes, generate_input_placeholder, \
     extract_per_level_tensor_representation_after_shift, reshape_to_satisfy_max_depth_after_shift
 from demo.unshifting_structure import reshape_to_satisfy_max_depth_after_unshift, generate_shapes_for_unshift, \
     extract_per_level_tensor_representation_after_unshift
-
-
-def flattenize_per_tensor_representation(blobs):
-    length = sum(map(lambda b: b.size, blobs))
-    flattened_res = np.zeros((length,))
-    last_index = 0
-    for blob in blobs:
-        flattened_res[last_index: last_index + blob.size] = blob.flatten()
-        last_index = last_index + blob.size
-    return flattened_res
-
-
-def prepare_input(subtree, max_shape):
-    if subtree is None:
-        # there is no subtree for this role, therefore just generate the placeholder
-        return generate_input_placeholder(max_shape)
-    subtree_shapes = np.array(tuple(np.array(i.shape) for i in subtree))
-    is_filler_subtree = hasattr(subtree, 'shape') and len(subtree.shape) == 1
-    if not is_filler_subtree and \
-            len(subtree_shapes) == len(max_shape) and \
-            np.all([np.all(np.equal(subtree_shapes[i], max_shape[i])) for i, _ in enumerate(subtree_shapes)]):
-        # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
-        # the subtree is already of a needed shape, just keep it unchanged
-        return subtree
-
-    if is_filler_subtree:
-        # TODO: need to understand why `extract_per_level_tensor_representation` returns a list
-        # subtree is a simple filler
-        placeholder = generate_input_placeholder(max_shape)
-        placeholder[0] = subtree.reshape(1, *subtree.shape)
-        return placeholder
-
-    raise NotImplementedError('This subtree cannot be prepared for join')
-
-
-def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basic_fillers, subtrees):
-    input_tensors = map(lambda s: prepare_input(s, input_structure_max_shape), subtrees)
-
-    fillers_joined = joiner_network.predict_on_batch([i for p in input_tensors for i in p])
-
-    single_role_shape = basic_roles[0].shape
-    single_filler_shape = basic_fillers[0].shape
-    max_depth = input_structure_max_shape.shape[0]
-    tensor_repr = extract_per_level_tensor_representation_after_shift(fillers_joined,
-                                                                      max_tree_depth=max_depth,
-                                                                      role_shape=single_role_shape,
-                                                                      filler_shape=single_filler_shape)
-
-    return reshape_to_satisfy_max_depth_after_shift(tensor_repr,
-                                                    max_depth,
-                                                    single_role_shape,
-                                                    single_filler_shape)
 
 
 def elementary_extract(extract_network, input_structure_max_shape, basic_roles, basic_fillers, tree):
@@ -116,10 +66,6 @@ def elementary_extract(extract_network, input_structure_max_shape, basic_roles, 
         max_tree_depth=max_depth,
         role_shape=single_role_shape,
         filler_shape=single_filler_shape)
-
-
-def get_filler_by(name, order, fillers):
-    return fillers[order.index(name)]
 
 
 def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):

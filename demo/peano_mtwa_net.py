@@ -50,29 +50,29 @@ if __name__ == '__main__':
     SINGLE_FILLER_SHAPE = fillers[0].shape
 
     # TPR-Inc Network
-    a = 0
-    new_number_one = number_to_tree(a, MAX_TREE_DEPTH, fillers, roles)
-    one_unshifted = flattenize_per_tensor_representation(new_number_one)
-
-    keras_increment_network = build_increment_network(roles=roles,
-                                                      dual_roles=dual_basic_roles_case_1,
-                                                      fillers=fillers,
-                                                      max_depth=MAX_TREE_DEPTH)
-    print('Built increment network')
-
-    new_number = keras_increment_network.predict_on_batch([
-        one_unshifted
-    ])
-
-    new_number_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
-                                                                            SINGLE_ROLE_SHAPE,
-                                                                            SINGLE_FILLER_SHAPE)
-
-    result_number = decode_number(number_tree=new_number_tree,
-                                  fillers=fillers,
-                                  dual_roles=dual_basic_roles_case_1,
-                                  max_depth=MAX_TREE_DEPTH)
-    print('After incrementing {}, get {}'.format(a, result_number))
+    # a = 0
+    # new_number_one = number_to_tree(a, MAX_TREE_DEPTH, fillers, roles)
+    # one_unshifted = flattenize_per_tensor_representation(new_number_one)
+    #
+    # keras_increment_network = build_increment_network(roles=roles,
+    #                                                   dual_roles=dual_basic_roles_case_1,
+    #                                                   fillers=fillers,
+    #                                                   max_depth=MAX_TREE_DEPTH)
+    # print('Built increment network')
+    #
+    # new_number = keras_increment_network.predict_on_batch([
+    #     one_unshifted
+    # ])
+    #
+    # new_number_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
+    #                                                                         SINGLE_ROLE_SHAPE,
+    #                                                                         SINGLE_FILLER_SHAPE)
+    #
+    # result_number = decode_number(number_tree=new_number_tree,
+    #                               fillers=fillers,
+    #                               dual_roles=dual_basic_roles_case_1,
+    #                               max_depth=MAX_TREE_DEPTH)
+    # print('After incrementing {}, get {}'.format(a, result_number))
 
     # TPR-Sum Network
     MAX_NUMBER = 4
@@ -92,12 +92,12 @@ if __name__ == '__main__':
                                           max_depth=MAX_TREE_DEPTH)
     print('Built increment network')
 
-    new_number = keras_sum_network.predict_on_batch([
+    incremented_number, decremented_number = keras_sum_network.predict_on_batch([
         one_unshifted,
         two_unshifted
     ])
 
-    new_number_tree = extract_per_level_tensor_representation_after_unshift(new_number, MAX_TREE_DEPTH,
+    new_number_tree = extract_per_level_tensor_representation_after_unshift(incremented_number, MAX_TREE_DEPTH,
                                                                             SINGLE_ROLE_SHAPE,
                                                                             SINGLE_FILLER_SHAPE)
 

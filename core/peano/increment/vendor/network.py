@@ -52,11 +52,11 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     return const_inputs, Lambda(normalization)(global_max_pool), one_tensor_output
 
 
-def check_if_zero_branch(flag_input):
+def check_if_zero_branch(flag_input, block_id):
     np_constant = np.array([-1])
     tf_constant = K.constant(np_constant)
     const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                        name='increment_neg_1')
+                        name='increment_neg_{}'.format(block_id))
 
     sum_is_zero_const = Add()([flag_input, const_neg_1])
     return const_neg_1, Multiply()([sum_is_zero_const, const_neg_1])
@@ -72,7 +72,7 @@ def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, 
         max_depth=max_depth,
         block_id=block_id + 1)
 
-    const_zero_branch_input, is_zero = check_if_zero_branch(is_not_zero)
+    const_zero_branch_input, is_zero = check_if_zero_branch(is_not_zero, block_id)
     is_value_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([
         condition_if_zero,
         is_zero
@@ -117,7 +117,7 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=block_id
+        block_id=112
     )
     return const_condition_inputs, output
 

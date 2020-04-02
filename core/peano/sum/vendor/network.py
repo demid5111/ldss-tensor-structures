@@ -6,7 +6,8 @@ from core.peano.increment.vendor.network import constant_inputs_for_increment_bl
 from core.unshifter.vendor.network import unshift_matrix
 
 
-def sum_block(incrementing_input, increment_value, roles, dual_roles, filler_len, max_depth, block_id,
+def sum_block(incrementing_input, decrementing_input,
+              increment_value, roles, dual_roles, filler_len, max_depth, block_id,
               left_shift_input, right_shift_input, constant_input_filler, constant_for_decrementing_input):
     increment_const_inputs, output = increment_block(
         incrementing_input=incrementing_input,
@@ -22,7 +23,7 @@ def sum_block(incrementing_input, increment_value, roles, dual_roles, filler_len
     )
 
     const_condition_inputs, incremented_output, decremented_input = condition_branch(
-        condition_input=incrementing_input,
+        condition_input=decrementing_input,
         condition_if_not_zero=output,
         condition_if_zero=incrementing_input,
         dual_roles=dual_roles,
@@ -31,12 +32,12 @@ def sum_block(incrementing_input, increment_value, roles, dual_roles, filler_len
         block_id=block_id
     )
 
-    decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
+    # decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
 
     return (
                *increment_const_inputs,
                *const_condition_inputs
-           ), incremented_output, decremented_output
+           ), incremented_output, decremented_input
 
 
 def build_sum_network(roles, fillers, dual_roles, max_depth):
@@ -55,12 +56,11 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
     tmp_reshaped_fake_filler, const_filler = filler_input
 
     target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth).shape
-    # later we have to join two subtrees of different depth. for that we have to
-    # make filler of verb of the same depth - make fake constant layer
     tmp_reshaped_fake, const_one = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
 
-    const_inputs, incremented_output, decremented_output = sum_block(
+    sum_const_inputs, incremented_output, decremented_output = sum_block(
         incrementing_input=flattened_incrementing_input,
+        decrementing_input=flattened_decrementing_input,
         increment_value=tmp_reshaped_increment,
         roles=roles,
         dual_roles=dual_roles,
@@ -76,10 +76,12 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
         inputs=[
             flattened_decrementing_input,
             flattened_incrementing_input,
-            *shift_input,
+            left_shift_input,
+            right_shift_input,
             const_increment,
             const_filler,
-            const_one
+            const_one,
+            *sum_const_inputs
         ],
         outputs=[
             incremented_output,

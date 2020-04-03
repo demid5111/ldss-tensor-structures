@@ -60,7 +60,7 @@ def sum_numbers(a, b, max_depth, roles, dual_roles, fillers, number_sum_blocks):
 
     keras_sum_network = build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=number_sum_blocks)
 
-    decremented_number, incremented_number, next_number, flag = keras_sum_network.predict_on_batch([
+    decremented_number, incremented_number = keras_sum_network.predict_on_batch([
         a_encoded,
         b_encoded
     ])

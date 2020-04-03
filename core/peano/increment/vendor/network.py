@@ -86,7 +86,7 @@ def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, 
     return (
                *const_not_zero_branch_inputs,
                const_zero_branch_input
-           ), sum_branches, decremented_input
+           ), sum_branches, decremented_input, is_zero
 
 
 def increment_block(incrementing_input, increment_value, roles, dual_roles, filler_len, max_depth, block_id,
@@ -110,7 +110,7 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
                                                                       filler_len=filler_len,
                                                                       max_depth=max_depth)
 
-    const_condition_inputs, output, _ = condition_branch(
+    const_condition_inputs, output, _, flag = condition_branch(
         condition_input=incrementing_input,
         condition_if_not_zero=cropped_number_after_increment,
         condition_if_zero=increment_value,
@@ -119,7 +119,7 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         max_depth=max_depth,
         block_id=block_id
     )
-    return const_condition_inputs, output, next_number
+    return const_condition_inputs, output, next_number, flag
 
 
 def constant_inputs_for_increment_block(roles, fillers, max_depth, block_id):
@@ -167,7 +167,7 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
     tmp_reshaped_increment, const_increment = increment_input
     tmp_reshaped_fake_filler, const_filler = filler_input
 
-    increment_const_inputs, output = increment_block(
+    increment_const_inputs, output, _, _ = increment_block(
         incrementing_input=flattened_incrementing_input,
         increment_value=tmp_reshaped_increment,
         roles=roles,

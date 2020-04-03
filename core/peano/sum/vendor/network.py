@@ -2,14 +2,15 @@ from keras import Input, Model
 from keras.layers import Concatenate
 
 from core.active_passive_net.active_extractor.vendor.network import custom_constant_layer
-from core.peano.increment.vendor.network import constant_inputs_for_increment_block, increment_block, condition_branch
+from core.peano.increment.vendor.network import constant_inputs_for_increment_block, increment_block, condition_branch, \
+    build_extract_branch
 from core.unshifter.vendor.network import unshift_matrix
 
 
 def sum_block(incrementing_input, decrementing_input,
               increment_value, roles, dual_roles, filler_len, max_depth, block_id,
               left_shift_input, right_shift_input, constant_input_filler, constant_for_decrementing_input):
-    increment_const_inputs, output, next_number = increment_block(
+    increment_const_inputs, output, next_number, flag = increment_block(
         incrementing_input=incrementing_input,
         increment_value=increment_value,
         roles=roles,
@@ -22,26 +23,34 @@ def sum_block(incrementing_input, decrementing_input,
         constant_input_filler=constant_input_filler
     )
 
-    const_condition_inputs, incremented_output, decremented_input = condition_branch(
+    const_condition_inputs, incremented_output, _, _ = condition_branch(
         condition_input=decrementing_input,
         condition_if_not_zero=output,
         condition_if_zero=incrementing_input,
         dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=block_id+1
+        block_id=block_id + 1
+    )
+
+    const_extract_inputs, decremented_input = build_extract_branch(
+        input_layer=decrementing_input,
+        extract_role=dual_roles[0],
+        filler_len=filler_len,
+        max_depth=max_depth - 1,
+        branch_id=block_id
     )
 
     decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
 
     return (
                *increment_const_inputs,
-               *const_condition_inputs
-           # ), output, output, next_number
-           ), incremented_output, decremented_output, next_number
+               *const_condition_inputs,
+               *const_extract_inputs
+           ), incremented_output, decremented_output, next_number, flag
 
 
-def build_sum_network(roles, fillers, dual_roles, max_depth):
+def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1):
     filler_len = fillers[0].shape[0]
 
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
@@ -59,19 +68,27 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
     target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth).shape
     tmp_reshaped_fake, const_one = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
 
-    sum_const_inputs, incremented_output, decremented_output, next_number = sum_block(
-        incrementing_input=flattened_incrementing_input,
-        decrementing_input=flattened_decrementing_input,
-        increment_value=tmp_reshaped_increment,
-        roles=roles,
-        dual_roles=dual_roles,
-        filler_len=filler_len,
-        max_depth=max_depth,
-        block_id=block_id,
-        left_shift_input=left_shift_input,
-        right_shift_input=right_shift_input,
-        constant_input_filler=tmp_reshaped_fake_filler,
-        constant_for_decrementing_input=tmp_reshaped_fake)
+    all_sum_const_inputs = []
+    incremented = flattened_incrementing_input
+    decremented = flattened_decrementing_input
+    next_number = None
+    for i in range(number_sum_blocks):
+        # TODO: why decrementing constant is not shared across sum blocks
+        # TODO: next number and flag are for debug purposes - need to remove
+        sum_const_inputs, incremented, decremented, next_number, flag = sum_block(
+            incrementing_input=incremented,
+            decrementing_input=decremented,
+            increment_value=tmp_reshaped_increment,
+            roles=roles,
+            dual_roles=dual_roles,
+            filler_len=filler_len,
+            max_depth=max_depth,
+            block_id=block_id,
+            left_shift_input=left_shift_input,
+            right_shift_input=right_shift_input,
+            constant_input_filler=tmp_reshaped_fake_filler,
+            constant_for_decrementing_input=tmp_reshaped_fake)
+        all_sum_const_inputs.extend(sum_const_inputs)
 
     return Model(
         inputs=[
@@ -80,12 +97,13 @@ def build_sum_network(roles, fillers, dual_roles, max_depth):
             const_increment,
             const_filler,
             const_one,
-            *sum_const_inputs,
+            *all_sum_const_inputs,
             flattened_decrementing_input,
             flattened_incrementing_input,
         ],
         outputs=[
-            decremented_output,
-            incremented_output,
-            next_number
+            decremented,
+            incremented,
+            next_number,
+            flag
         ])

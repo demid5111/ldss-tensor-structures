@@ -6,7 +6,7 @@ import numpy as np
 from core.peano.increment.vendor.network import build_increment_network
 from core.peano.utils import number_to_tree, get_max_tree_depth
 from demo.active_passive_net import flattenize_per_tensor_representation
-from demo.peano_mtwa_net import decode_number
+from demo.peano_mtwa_net import decode_number, sum_numbers
 from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
 
 fillers = np.array([
@@ -269,3 +269,41 @@ class IncrementTest(unittest.TestCase, TensorAssertions):
                                       dual_roles=dual_basic_roles_case_1,
                                       max_depth=max_depth)
         self.assertEqual(expected_numeric, result_number)
+
+
+class IncrementSingleSum(unittest.TestCase, TensorAssertions):
+    def test_single_sum_2_1(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 2
+        b = 1
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=1)
+        self.assertEqual(1, c)
+        self.assertEqual(2, d)
+
+    def test_single_sum_1_2(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 1
+        b = 2
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=1)
+        self.assertEqual(0, c)
+        self.assertEqual(3, d)
+
+    def test_single_sum_0_2(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 0
+        b = 2
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=1)
+        self.assertEqual(0, c)
+        self.assertEqual(2, d)
+
+    def test_single_sum_2_0(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 2
+        b = 0
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=1)
+        self.assertEqual(1, c)
+        self.assertEqual(1, d)

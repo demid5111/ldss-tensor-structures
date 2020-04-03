@@ -119,5 +119,5 @@ if __name__ == '__main__':
 
     a = 2
     b = 1
-    c, d = sum_numbers(a, b, MAX_TREE_DEPTH, roles, dual_basic_roles_case_1, fillers)
+    c, d = sum_numbers(a, b, MAX_TREE_DEPTH, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=2)
     print('After {} + {}, get {} + {}'.format(a, b, c, d))

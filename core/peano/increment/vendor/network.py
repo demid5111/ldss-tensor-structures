@@ -22,7 +22,7 @@ def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth)
     )
 
 
-def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branch_id=1):
+def build_extract_branch(input_layer, extract_role, filler_len, max_depth, block_id):
     stop_level_for_one = max_depth - 1
     one_branch = build_one_level_extraction_branch(model_input=input_layer,
                                                    roles=[None, extract_role],
@@ -30,7 +30,7 @@ def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branc
                                                    max_depth=max_depth,
                                                    stop_level=stop_level_for_one,
                                                    role_extraction_order=[1],
-                                                   prefix='single_extract_{}'.format(branch_id))
+                                                   prefix='single_extract_{}'.format(block_id))
     one_extraction_const_inputs, one_raw_output, _ = one_branch
     return [
                *one_extraction_const_inputs,
@@ -43,7 +43,7 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
         extract_role=role,
         filler_len=filler_len,
         max_depth=max_depth - 1,
-        branch_id=block_id
+        block_id=block_id
     )
 
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape

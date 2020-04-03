@@ -307,3 +307,59 @@ class IncrementSingleSum(unittest.TestCase, TensorAssertions):
         c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=1)
         self.assertEqual(1, c)
         self.assertEqual(1, d)
+
+
+class IncrementFullSum(unittest.TestCase, TensorAssertions):
+    def test_sum_2_1(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 2
+        b = 1
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(3, d)
+
+    def test_sum_1_2(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 1
+        b = 2
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(3, d)
+
+    def test_sum_0_2(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 0
+        b = 2
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(2, d)
+
+    def test_sum_2_0(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 2
+        b = 0
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(2, d)
+
+    def test_sum_3_0(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 3
+        b = 0
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(3, d)
+
+    def test_sum_0_3(self):
+        max_number = 3
+        max_tree_depth = get_max_tree_depth(max_number)
+        a = 0
+        b = 3
+        c, d = sum_numbers(a, b, max_tree_depth, roles, dual_basic_roles_case_1, fillers, number_sum_blocks=max_number)
+        self.assertEqual(0, c)
+        self.assertEqual(3, d)

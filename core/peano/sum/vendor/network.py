@@ -30,7 +30,7 @@ def sum_block(incrementing_input, decrementing_input,
         dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=block_id + 1
+        block_id=block_id + 2
     )
 
     const_extract_inputs, decremented_input = build_extract_branch(
@@ -38,7 +38,7 @@ def sum_block(incrementing_input, decrementing_input,
         extract_role=dual_roles[0],
         filler_len=filler_len,
         max_depth=max_depth - 1,
-        branch_id=block_id
+        block_id=block_id + 4
     )
 
     decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
@@ -65,13 +65,14 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
     tmp_reshaped_increment, const_increment = increment_input
     tmp_reshaped_fake_filler, const_filler = filler_input
 
-    target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth).shape
+    target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth-1).shape
     tmp_reshaped_fake, const_one = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
 
     all_sum_const_inputs = []
     incremented = flattened_incrementing_input
     decremented = flattened_decrementing_input
     next_number = None
+    flag = None
     for i in range(number_sum_blocks):
         # TODO: why decrementing constant is not shared across sum blocks
         # TODO: next number and flag are for debug purposes - need to remove
@@ -83,7 +84,7 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
             dual_roles=dual_roles,
             filler_len=filler_len,
             max_depth=max_depth,
-            block_id=block_id,
+            block_id=block_id+i*5,
             left_shift_input=left_shift_input,
             right_shift_input=right_shift_input,
             constant_input_filler=tmp_reshaped_fake_filler,

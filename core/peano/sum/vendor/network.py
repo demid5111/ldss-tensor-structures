@@ -72,8 +72,6 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
     incremented = flattened_incrementing_input
     decremented = flattened_decrementing_input
     for i in range(number_sum_blocks):
-        # TODO: why decrementing constant is not shared across sum blocks
-        # TODO: next number and flag are for debug purposes - need to remove
         sum_const_inputs, incremented, decremented = sum_block(
             incrementing_input=incremented,
             decrementing_input=decremented,

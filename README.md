@@ -1,62 +1,35 @@
-[![Build](https://travis-ci.org/demid5111/ldss-tensor-structures.svg?branch=master)](https://travis-ci.org/demid5111/ldss-tensor-structures)
-[![Coverage](https://coveralls.io/repos/github/demid5111/ldss-tensor-structures/badge.svg)](https://coveralls.io/github/demid5111/ldss-tensor-structures)
+## About
+Emerald is a minimal theme created for Jekyll. The main purpose of Emerald is to provide a clear theme for those who want a blog ready to use, focused on the content and mobile-first.
 
-## Prerequisites
+![Emerald](/img/Emerald01.png "Emerald")
 
-1. Python 3.6 and higher
-2. Preferably Anaconda package
+## Setup & usage
+Emerald may be installed by simply downloading the .zip folder from the [repository on Github](https://github.com/KingFelix/emerald/archive/master.zip).
 
-## Setting up
+After extracting the content from the folder into the selected directory, you can type ``jekyll serve`` from the terminal, than open your browser to ``0.0.0.0:4000/emerald/`` and you will find it there.
 
-1. If you configure for the first time and do not have a `venv` folder, create virtual environment. 
-   Instruction for Linux systems:
+Additionally it is possible to fork the repository and use Github Pages as hosting. By following this way it will be enough to change the ``baseurl`` value into the ``_config.yml`` file, with the directory name of your project (for example /blog) or simply with a "/" (slash) if you want install Emerald in the root.
 
-   ```bash
-   python3 -m pip install --user virtualenv
-   python3 -m virtualenv -p `which python3` venv
-   ```
+### Branch
+Emerald has two branch: 
+- ``master``: is for developing pourpose.
+- ``gh-pages``: is only for demo site.  
 
-2. Activate environment:
+### Baseurl
+Emerald was thought to be used mainly with Github, in particular into [project site](https://pages.github.com/). For this reason several tags have been included ``{{ site.baseurl }}`` to refer to the "/emerald/" directory.
+You can change the "baseurl" value into the ``config.yml`` file, to match your directory (for example "/blog/") or the root of your project. In that case you must set the "baseurl" value to "/".
 
-   ```bash
-   source venv/bin/activate
-   ```
+### Typography
+To maintain the vertical rhythm, it has been applied a **Typographic scale** as a modular scale, with a baseline set to 24px. To maintain this rhythm you need to insert elements like image, video or other contents with a 24px (or multiple) height as refer.
 
-3. Install dependencies:
+Last but not least: the [Jekyll documentation](http://jekyllrb.com) is the best starting point! 
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Author
 
-4. (Optionally]) Install graphviz:
-    1. macOS:
-        - `brew install graphviz`
-        - `export PATH=/usr/local/bin/dot:$PATH`
-       
-     
-    ```bash
-    pip install -r requirements_dev.txt
-    ```
+### Jacopo Rabolini
 
-## Running tests
+- Web site: [www.jacoporabolini.com](http://www.jacoporabolini.com)
+- Google+: [+JacopoRabolini](https://plus.google.com/u/0/+JacopoRabolini/posts)
 
-1. Without a coverage:
-```
-python3 -m unittest discover -p "*_test.py"
-```
-
-2. With coverage:
-    * Run tests:
-    ```
-    coverage run --source=math_utils.py -m unittest discover -p "*_test.py"
-    ```
-    * Visualize coverage:
-        - console:
-        ```
-        coverage report -m
-        ```
-        - html:
-        ```
-        coverage html
-        open html_cov/index.html
-        ```
+## License
+Emerald is released under [MIT License](license.md).

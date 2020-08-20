@@ -1,14 +1,14 @@
 # Site settings
 title: LDSS Tensor Structures | Scientific blog
 description: "A minimal blog template, build with Jekyll."
-url: "https://demid5111.github.io/ldss-tensor-structures-docs/"
+url: "https://demid5111.github.io/ldss-tensor-structures/"
 author:
   name: "Alexander Demidovskij"
   email: "monadv@yandex.ru"
   url: "http://www.hse.ru/staff/demidovs"
 
 # Build settings
-baseurl: /ldss-tensor-structures-docs/ # Change this to your relative path (ex: /blog/), or leave just a /
+baseurl: /ldss-tensor-structures/ # Change this to your relative path (ex: /blog/), or leave just a /
 markdown: kramdown
 source: .
 destination: ./_site

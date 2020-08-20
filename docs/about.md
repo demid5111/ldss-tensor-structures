@@ -1,18 +1,13 @@
 ---
 layout: page
-title: About
-permalink: /about/
+title: About LDSS Tensor Structures
 ---
+## About
+LDSS Tensor Structures is a library for implementing Tensor Product Representations as modular neural networks for further integration in Linguistic Decision Making pipelines.
 
-This is the base Jekyll theme. You can find out more info about customizing your Jekyll theme, as well as basic Jekyll usage documentation at [jekyllrb.com](https://jekyllrb.com/)
-
-You can find the source code for Minima at GitHub:
-[jekyll][jekyll-organization] /
-[minima](https://github.com/jekyll/minima)
-
-You can find the source code for Jekyll at GitHub:
-[jekyll][jekyll-organization] /
-[jekyll](https://github.com/jekyll/jekyll)
+For further details on LDSS Tensor Structures, please visit the [repository on Github](https://github.com/demid5111/ldss-tensor-structures/archive/master.zip).
 
 
-[jekyll-organization]: https://github.com/jekyll
+### Author
+
+Author of the library is Alexander Demidovskij. He is Senior Software engineer at Intel, PhD student and lector at Higher School of Economics.

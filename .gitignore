@@ -4,6 +4,7 @@
 # Auto-generated
 .coverage
 htmlcov
+tmp
 
 # Python-specific
 venv

@@ -46,7 +46,7 @@ def shift_matrix(role, filler_size, max_depth, name):
     :param max_depth: maximum depth of the resulting tree
     :return: W_{cons0} matrix
     """
-    print('Building {} matrix'.format(name))
+    # print('Building {} matrix'.format(name))
     role_len = role.shape[0]
 
     # constructing I (identity matrix of the given depth)

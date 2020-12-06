@@ -5,8 +5,10 @@ from keras.layers import Concatenate, Lambda, GlobalMaxPooling1D, Add, Multiply
 
 from core.active_passive_net.active_extractor.vendor.network import custom_cropping_layer, custom_constant_layer
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch, normalization
-from core.active_passive_net.passive_extractor.vendor.network import build_join_branch
+from core.active_passive_net.passive_extractor.vendor.network import build_join_branch, create_shift_matrix_as_input
+from core.peano.utils import number_to_tree
 from core.unshifter.vendor.network import unshift_matrix
+from core.utils import flattenize_per_tensor_representation
 
 
 def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth):
@@ -20,7 +22,7 @@ def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth)
     )
 
 
-def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branch_id=1):
+def build_extract_branch(input_layer, extract_role, filler_len, max_depth, block_id):
     stop_level_for_one = max_depth - 1
     one_branch = build_one_level_extraction_branch(model_input=input_layer,
                                                    roles=[None, extract_role],
@@ -28,7 +30,7 @@ def build_extract_branch(input_layer, extract_role, filler_len, max_depth, branc
                                                    max_depth=max_depth,
                                                    stop_level=stop_level_for_one,
                                                    role_extraction_order=[1],
-                                                   prefix='single_extract_{}'.format(branch_id))
+                                                   prefix='single_extract_{}'.format(block_id))
     one_extraction_const_inputs, one_raw_output, _ = one_branch
     return [
                *one_extraction_const_inputs,
@@ -41,7 +43,7 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
         extract_role=role,
         filler_len=filler_len,
         max_depth=max_depth - 1,
-        branch_id=block_id
+        block_id=block_id
     )
 
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape
@@ -50,21 +52,47 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     return const_inputs, Lambda(normalization)(global_max_pool), one_tensor_output
 
 
-def check_if_zero_branch(flag_input):
+def check_if_zero_branch(flag_input, block_id):
     np_constant = np.array([-1])
     tf_constant = K.constant(np_constant)
     const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                        name='increment_neg_1')
+                        name='increment_neg_{}'.format(block_id))
 
     sum_is_zero_const = Add()([flag_input, const_neg_1])
     return const_neg_1, Multiply()([sum_is_zero_const, const_neg_1])
 
 
-def single_sum_block(decrementing_input, incrementing_input, constant_input_one, constant_input_filler, roles,
-                     filler_len, dual_roles, max_depth, increment_value):
-    block_id = 1
+def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, dual_roles, filler_len, max_depth,
+                     block_id):
+    # TODO: generalize for a APNet classification branch
+    const_not_zero_branch_inputs, is_not_zero, decremented_input = check_if_not_zero_branch(
+        decrementing_input=condition_input,
+        role=dual_roles[1],
+        filler_len=filler_len,
+        max_depth=max_depth,
+        block_id=block_id + 1)
 
-    next_number_const_inputs, next_number = build_join_branch(
+    const_zero_branch_input, is_zero = check_if_zero_branch(is_not_zero, block_id)
+    is_value_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([
+        condition_if_zero,
+        is_zero
+    ])
+
+    is_value_not_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([
+        condition_if_not_zero,
+        is_not_zero
+    ])
+    sum_branches = Add()([is_value_zero_branch, is_value_not_zero_branch])
+    return (
+               *const_not_zero_branch_inputs,
+               const_zero_branch_input
+           ), sum_branches, decremented_input
+
+
+def increment_block(incrementing_input, increment_value, roles, dual_roles, filler_len, max_depth, block_id,
+                    left_shift_input,
+                    right_shift_input, constant_input_filler):
+    _, next_number = build_join_branch(
         roles=roles,
         filler_len=filler_len,
         max_depth=max_depth,
@@ -72,80 +100,93 @@ def single_sum_block(decrementing_input, incrementing_input, constant_input_one,
             incrementing_input,
             increment_value
         ],
-        prefix='cons_'.format(block_id)
+        prefix='cons_'.format(block_id),
+        left_shift_input=left_shift_input,
+        right_shift_input=right_shift_input
     )
     next_number_output = Concatenate(axis=0)([constant_input_filler, next_number])
+    cropped_number_after_increment = make_output_same_length_as_input(layer_to_crop=next_number_output,
+                                                                      role=roles[1],
+                                                                      filler_len=filler_len,
+                                                                      max_depth=max_depth)
 
-    const_first_operand_inputs, is_first_operand_not_zero, _ = check_if_not_zero_branch(
-        decrementing_input=decrementing_input,
-        role=dual_roles[1],
+    const_condition_inputs, output, _ = condition_branch(
+        condition_input=incrementing_input,
+        condition_if_not_zero=cropped_number_after_increment,
+        condition_if_zero=increment_value,
+        dual_roles=dual_roles,
         filler_len=filler_len,
         max_depth=max_depth,
-        block_id=block_id + 1)
-    const_second_operand_inputs, is_second_operand_not_zero, _ = check_if_not_zero_branch(
-        decrementing_input=incrementing_input,
-        role=dual_roles[1],
-        filler_len=filler_len,
-        max_depth=max_depth,
-        block_id=block_id + 2)
-    is_both_not_zero = Multiply()([is_first_operand_not_zero, is_second_operand_not_zero])
-    is_first_operand_not_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])(
-        [next_number_output, is_both_not_zero])
-
-    const_input, is_any_zero = check_if_zero_branch(is_both_not_zero)
-    lengthened_input = Concatenate(axis=0)([increment_value, constant_input_one])
-    is_any_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])(
-        [lengthened_input, is_any_zero])
-
-    sum_branches = Add()([is_any_zero_branch, is_first_operand_not_zero_branch])
-
-    cropped_number = make_output_same_length_as_input(layer_to_crop=sum_branches,
-                                                      role=dual_roles[1],
-                                                      filler_len=filler_len,
-                                                      max_depth=max_depth)
-    return [
-               *const_first_operand_inputs,
-               *const_second_operand_inputs,
-               const_input,
-               *next_number_const_inputs
-           ], cropped_number
+        block_id=block_id
+    )
+    return const_condition_inputs, output
 
 
-def build_increment_network(roles, fillers, dual_roles, max_depth, increment_value):
+def constant_inputs_for_increment_block(roles, fillers, max_depth, block_id):
     filler_len = fillers[0].shape[0]
 
-    input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
-    shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_decrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
-    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
+    # Joining matrices
+    prefix = '{}_increment_block_'.format(block_id)
+    left_shift_input = create_shift_matrix_as_input(roles[0], 0, filler_len, max_depth, prefix)
+    right_shift_input = create_shift_matrix_as_input(roles[1], 1, filler_len, max_depth, prefix)
 
-    target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth).shape
-    # later we have to join two subtrees of different depth. for that we have to
-    # make filler of verb of the same depth - make fake constant layer
-    tmp_reshaped_fake, const_one = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
-
-    tmp_reshaped_fake_filler, const_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
+    # Incrementing value
+    new_number_one = number_to_tree(1, max_depth, fillers, roles)
+    one = flattenize_per_tensor_representation(new_number_one)
     tmp_reshaped_increment, const_increment = custom_constant_layer(const_size=filler_len,
                                                                     name='const_increment',
-                                                                    np_constant=increment_value)
+                                                                    np_constant=one)
 
-    inputs, output = single_sum_block(decrementing_input=flattened_decrementing_input,
-                                      incrementing_input=flattened_incrementing_input,
-                                      constant_input_one=tmp_reshaped_fake,
-                                      constant_input_filler=tmp_reshaped_fake_filler,
-                                      roles=roles,
-                                      filler_len=filler_len,
-                                      dual_roles=dual_roles,
-                                      max_depth=max_depth,
-                                      increment_value=tmp_reshaped_increment)
+    # Filler constant for filling first level that is missed after join
+    tmp_reshaped_fake_filler, const_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
+
+    return (
+               left_shift_input,
+               right_shift_input
+           ), (
+               tmp_reshaped_increment,
+               const_increment
+           ), (
+               tmp_reshaped_fake_filler,
+               const_filler
+           )
+
+
+def build_increment_network(roles, dual_roles, fillers, max_depth):
+    filler_len = fillers[0].shape[0]
+
+    # Number to be incremented
+    input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
+    shape = (flattened_tree_num_elements + filler_len, 1)
+    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
+
+    block_id = 0
+    shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,
+                                                                                     block_id)
+    left_shift_input, right_shift_input = shift_input
+    tmp_reshaped_increment, const_increment = increment_input
+    tmp_reshaped_fake_filler, const_filler = filler_input
+
+    increment_const_inputs, output = increment_block(
+        incrementing_input=flattened_incrementing_input,
+        increment_value=tmp_reshaped_increment,
+        roles=roles,
+        dual_roles=dual_roles,
+        filler_len=filler_len,
+        max_depth=max_depth,
+        block_id=block_id,
+        left_shift_input=left_shift_input,
+        right_shift_input=right_shift_input,
+        constant_input_filler=tmp_reshaped_fake_filler
+    )
 
     return Model(
         inputs=[
-            flattened_decrementing_input,
-            flattened_incrementing_input,
-            *inputs,
-            const_one,
+            left_shift_input,
+            right_shift_input,
+            const_increment,
             const_filler,
-            const_increment
+            *increment_const_inputs,
+            flattened_incrementing_input,
         ],
         outputs=output)

@@ -8,12 +8,18 @@ from core.joiner.vendor.network import constant_input, mat_mul, shift_matrix
 from core.unshifter.vendor.network import unshift_matrix
 
 
+def create_shift_matrix_as_input(role, role_index, filler_len, max_depth, prefix):
+    left_shift_input_name = '{}constant_input_(cons{})'.format(prefix + '_' if prefix else '', role_index)
+    return constant_input(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
+
+
 # TODO: refactor and move to the joiner network
-def build_join_branch(roles, filler_len, max_depth, inputs, prefix=''):
-    left_shift_input_name = '{}constant_input_(cons0)'.format(prefix + '_' if prefix else '')
-    left_shift_input = constant_input(roles[0], filler_len, max_depth, left_shift_input_name, shift_matrix)
-    right_shift_input_name = '{}constant_input_(cons1)'.format(prefix + '_' if prefix else '')
-    right_shift_input = constant_input(roles[1], filler_len, max_depth, right_shift_input_name, shift_matrix)
+def build_join_branch(roles, filler_len, max_depth, inputs, prefix='', left_shift_input=None, right_shift_input=None):
+    if left_shift_input is None:
+        left_shift_input = create_shift_matrix_as_input(roles[0], 0, filler_len, max_depth, prefix)
+
+    if right_shift_input is None:
+        right_shift_input = create_shift_matrix_as_input(roles[1], 1, filler_len, max_depth, prefix)
 
     left_matmul_layer = Lambda(mat_mul)([
         left_shift_input,

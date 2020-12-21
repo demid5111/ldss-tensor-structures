@@ -12,3 +12,5 @@ venv
 
 *.dot
 *.png
+
+.DS_Store

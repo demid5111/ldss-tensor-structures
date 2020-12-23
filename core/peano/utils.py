@@ -11,7 +11,7 @@ def get_max_tree_depth(maximum_number):
     return maximum_number + 1
 
 
-def number_to_tree(target_number, max_tree_depth, fillers, roles):
+def number_to_tree(target_number, max_tree_depth, fillers, roles, joiner_network=None):
     single_role_shape = roles[0].shape
     single_filler_shape = fillers[0].shape
     fillers_shapes = generate_shapes(max_tree_depth=max_tree_depth,
@@ -21,7 +21,9 @@ def number_to_tree(target_number, max_tree_depth, fillers, roles):
     if target_number == 0:
         return prepare_input(None, fillers_shapes)
 
-    joiner_network = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
+
+    if not joiner_network:
+        joiner_network = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
     one = fillers[0]
     for i in range(1):

@@ -1,5 +1,8 @@
 import numpy as np
 
+from core.joiner.utils import generate_shapes
+from core.joiner.vendor.network import build_tree_joiner_network
+
 from core.peano.decode.vendor.network import build_decode_number_network
 from core.peano.increment.vendor.network import build_increment_network
 from core.peano.sum.vendor.network import build_sum_network
@@ -8,8 +11,8 @@ from core.utils import flattenize_per_tensor_representation
 from demo.unshifting_structure import extract_per_level_tensor_representation_after_unshift
 
 
-def encode(number, max_depth, roles, fillers):
-    new_number_one = number_to_tree(number, max_depth, fillers, roles)
+def encode(number, max_depth, roles, fillers, joiner_network=None):
+    new_number_one = number_to_tree(number, max_depth, fillers, roles, joiner_network)
     return flattenize_per_tensor_representation(new_number_one)
 
 
@@ -55,8 +58,14 @@ def decode_number(number_tree, fillers, dual_roles, max_depth):
 
 
 def sum_numbers(a, b, max_depth, roles, dual_roles, fillers, number_sum_blocks):
-    a_encoded = encode(a, max_depth, roles, fillers)
-    b_encoded = encode(b, max_depth, roles, fillers)
+    single_role_shape = roles[0].shape
+    single_filler_shape = fillers[0].shape
+    fillers_shapes = generate_shapes(max_tree_depth=max_depth,
+                                     role_shape=single_role_shape,
+                                     filler_shape=single_filler_shape)
+    joiner_network = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
+    a_encoded = encode(a, max_depth, roles, fillers, joiner_network)
+    b_encoded = encode(b, max_depth, roles, fillers, joiner_network)
 
     keras_sum_network = build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=number_sum_blocks)
 

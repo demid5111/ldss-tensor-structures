@@ -5,8 +5,6 @@ import os
 import pandas as pd
 
 
-
-
 def get_img_folder_path():
     project_root = os.path.dirname(os.path.realpath(__file__))
     tmp_artifacts_root = os.path.join(project_root, 'img')

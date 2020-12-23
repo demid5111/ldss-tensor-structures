@@ -1,6 +1,8 @@
 from functools import reduce
 
 import numpy as np
+import scipy.sparse
+
 from keras import backend as K
 from keras.engine import Input
 from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
@@ -40,7 +42,7 @@ def constant_input(role, filler_len, max_depth, name, matrix_creator):
     return Input(tensor=tf_constant, batch_shape=np_constant.shape, shape=np_constant.shape, dtype='int32', name=name)
 
 
-def shift_matrix(role, filler_size, max_depth, name):
+def shift_matrix(role, filler_size, max_depth, name, mode='dense'):
     """
     Builds the W_{cons0} matrix
     :param max_depth: maximum depth of the resulting tree
@@ -53,9 +55,17 @@ def shift_matrix(role, filler_size, max_depth, name):
     num_cols = reduce(lambda acc, depth: acc + (filler_size * (2 ** depth)), range(max_depth), 0)
     num_rows = num_cols * role_len  # + 1 no row for magic epsilon (p. 315) - is it a root?
 
-    res_matrix = np.zeros((num_rows, num_cols))
+    if mode == 'dense':
+        res_matrix = np.zeros((num_rows, num_cols))
+    elif mode == 'sparse':
+        res_matrix = scipy.sparse.lil_matrix((num_rows, num_cols))
+    else:
+        raise NotImplementedError(f'Given mode {mode} is not supported for shift_matrix() method')
+
     for row_index, col_index in zip(range(0, num_rows - role_len + 1, role_len), range(num_cols)):
-        res_matrix[row_index:row_index + role_len, col_index] = role
+        # broadcast will not work for lil_matrix use case
+        res_matrix[row_index, col_index] = role[0]
+        res_matrix[row_index+1, col_index] = role[1]
     return res_matrix
 
 

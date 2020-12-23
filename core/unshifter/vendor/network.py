@@ -1,13 +1,14 @@
 from functools import reduce
 
 import numpy as np
+import scipy.sparse
 
 from keras.models import Model
 
 from core.joiner.vendor.network import constant_input, filler_input_subgraph
 
 
-def unshift_matrix(role, filler_size, max_depth, name='unshift'):
+def unshift_matrix(role, filler_size, max_depth, name='unshift', mode='dense'):
     """
     Builds the W_{cons0} matrix
     :param name:
@@ -21,7 +22,13 @@ def unshift_matrix(role, filler_size, max_depth, name='unshift'):
     num_rows = reduce(lambda acc, depth: acc + (filler_size * (2 ** depth)), range(max_depth), 0)
     num_cols = num_rows * role_len
 
-    res_matrix = np.zeros((num_rows, num_cols))
+    if mode == 'dense':
+        res_matrix = np.zeros((num_rows, num_cols))
+    elif mode == 'sparse':
+        res_matrix = scipy.sparse.lil_matrix((num_rows, num_cols))
+    else:
+        raise NotImplementedError(f'Given mode {mode} is not supported for shift_matrix() method')
+
     for row_index, col_index in zip(range(num_rows), range(0, num_cols - role_len + 1, role_len)):
         res_matrix[row_index, col_index: col_index + role_len] = role
     return res_matrix

@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import pandas as pd
-from scipy import sparse
 
 from core.active_passive_net.classifier.vendor.network import build_real_filler_extractor_network
 from core.joiner.utils import generate_shapes
@@ -70,12 +69,6 @@ def create_encoded_random_tree_numpy(depth):
                                      role_shape=single_role_shape,
                                      filler_shape=single_filler_shape)
 
-    # this is the mocked version
-    # print('Warning: Generating fake tensor instead of real encoding')
-    # mocked_tree = [np.ones(shape) for shape in fillers_shapes]
-    # return flattenize_per_tensor_representation(mocked_tree)
-
-    # this is the true version
     filler_len = fillers_shapes[0][1]
     max_depth = len(fillers_shapes)
     new_left = fillers[0]
@@ -84,7 +77,7 @@ def create_encoded_random_tree_numpy(depth):
         left_shift_input = shift_matrix(roles[0], filler_len, level_index, name=None)
         right_shift_input = shift_matrix(roles[1], filler_len, level_index, name=None)
         joint = left_shift_input.dot(new_left) + right_shift_input.dot(new_right)
-        new_left = np.append(np.zeros((filler_len, )), joint)
+        new_left = np.append(np.zeros((filler_len,)), joint)
         new_right = new_left
 
     return new_left
@@ -104,13 +97,11 @@ def create_encoded_random_tree_scipy(depth):
     new_left = fillers[0]
     new_right = fillers[1]
     for level_index in range(1, max_depth):
-        print(f'Loading sparse shift left matrix from level {level_index}')
-        left_shift_input = sparse.load_npz(shift_sparse_path(level_index, 'left'))
-        print(f'Loading sparse shift right matrix from level {level_index}')
-        right_shift_input = sparse.load_npz(shift_sparse_path(level_index, 'right'))
+        left_shift_input = shift_matrix(roles[0], filler_len, level_index, name=None, mode='sparse')
+        right_shift_input = shift_matrix(roles[1], filler_len, level_index, name=None, mode='sparse')
 
         joint = left_shift_input.dot(new_left) + right_shift_input.dot(new_right)
-        new_left = np.append(np.zeros((filler_len, )), joint)
+        new_left = np.append(np.zeros((filler_len,)), joint)
         new_right = new_left
 
     return new_left
@@ -141,47 +132,6 @@ def shift_sparse_path(level_index, side):
     return os.path.join(tmp_root, f'shift_sparse_level_to_{level_index}_{side}.npz')
 
 
-def dump_array_as_sparse(path, array):
-    print('Dumping for sparsification experiment')
-    index_list = np.argwhere(array != 0)
-    transposed_indexes = tuple(index_list.T)
-    print(f'{array.shape} '
-          f'-> {array.size} '
-          f'-> {len(index_list)} '
-          f'-> compression in {array.size / len(index_list)} times')
-
-    row_indexes, column_indexes = transposed_indexes
-    sparse_data = array[transposed_indexes]
-    sparse_matrix = sparse.coo_matrix((sparse_data, (row_indexes, column_indexes)), shape=array.shape)
-    sparse.save_npz(path, sparse_matrix)
-
-
-def dump_unshift_matrixes_till(depth):
-    fillers, roles, dual_roles = input_data()
-    max_depth = depth - 1
-    stop_level = 0
-    filler_len = fillers[0].shape[0]
-    role_extraction_order = [1 for _ in range(max_depth)]
-
-    for level_index, role_index in zip(range(max_depth, stop_level - 1, -1), role_extraction_order):
-        left_shift_input = unshift_matrix(roles[role_index], filler_len, level_index)
-        dump_array_as_sparse(unshift_sparse_path(level_index), left_shift_input)
-
-
-def dump_shift_matrixes_till(depth):
-    fillers, roles, _ = input_data()
-    filler_len = len(fillers)
-
-    def _dump(role_index, mode):
-        matrix = shift_matrix(roles[role_index], filler_len, level_index, name=None)
-        path = shift_sparse_path(level_index, mode)
-        dump_array_as_sparse(path, matrix)
-
-    for level_index in range(1, depth):
-        _dump(0, 'left')
-        _dump(1, 'right')
-
-
 def decode_most_nested_element_numpy(tree, depth):
     fillers, roles, dual_roles = input_data()
     current_input = tree
@@ -205,8 +155,7 @@ def decode_most_nested_element_scipy(tree, depth):
     role_extraction_order = [1 for _ in range(max_depth)]
 
     for level_index, role_index in zip(range(max_depth, stop_level - 1, -1), role_extraction_order):
-        print(f'Loading sparse matrix from level {level_index}')
-        left_shift_input = sparse.load_npz(unshift_sparse_path(level_index))
+        left_shift_input = unshift_matrix(roles[role_index], filler_len, level_index, mode='sparse')
         current_input = left_shift_input.dot(current_input[filler_len:])
     return current_input
 
@@ -237,31 +186,38 @@ def run_task(task, *args):
 
 
 def tmp_folder_path():
-    project_root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
     tmp_artifacts_root = os.path.join(project_root, 'tmp')
     return project_root, tmp_artifacts_root
 
 
-def process_task(depth, task, backend):
-    print(f'Processing task {task} for depth {depth}')
+def run_console_tool(tool_arguments):
     venv_path = os.path.join('venv', 'bin', 'python')
-    project_root, tmp_artifacts_root = tmp_folder_path()
     python_executable = os.path.join(project_root, venv_path)
-
     options = [
         python_executable, __file__,
+        *tool_arguments
+    ]
+    print('[SUBPROCESS] {}'.format(' '.join(options)))
+    return subprocess.run(options, capture_output=True)
+
+
+def process_task(depth, task, backend):
+    print(f'Processing task {task} for depth {depth}')
+    project_root, tmp_artifacts_root = tmp_folder_path()
+    options = [
         '--depth', str(depth),
         '--mode', task,
         '--backend', backend,
         '--artifact', os.path.join(tmp_artifacts_root, f'test_{depth}_{backend}.npy')
     ]
-    os.makedirs(tmp_artifacts_root, exist_ok=True)
-    res = subprocess.run(options, capture_output=True)
+    res = run_console_tool(options)
     output = res.stdout.decode().strip().split('\n')
     pattern = re.compile(r'^\[(?P<type>START|PEAK|FINISH)\]\s(?P<value>\d+\.\d+)')
     values = {}
     try:
-        if re.search('Error:', res.stdout.decode().strip()):
+        if re.search('Error:', res.stderr.decode().strip()):
+            print(res.stderr.decode().strip())
             raise AttributeError('stderr of the process is not empty')
         for line in output:
             match = re.search(pattern, line)
@@ -296,24 +252,18 @@ def main(args):
     columns = gen_col + ['depth', 'encode_time', 'decode_time']
     df = pd.DataFrame(columns=columns)
 
-    upper_bound = 12
-    if args.backend == 'nn' and upper_bound is None:
-        upper_bound = 12
-    elif args.backend in ('numpy', 'scipy') and upper_bound is None:
-        upper_bound = 30
-    lower_bound = 2
+    steps = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+    if args.backend == 'numpy':
+        steps = (*steps, 15)
+    elif args.backend == 'scipy':
+        steps = (*steps, 15, 20)
 
-    if args.backend == 'scipy':
-        dump_shift_matrixes_till(upper_bound)
-        dump_unshift_matrixes_till(upper_bound)
-
-    steps = range(lower_bound, upper_bound) if upper_bound else (upper_bound, )
     for i, depth in enumerate(steps):
         values = process_depth(depth, args.backend)
         df.loc[i] = [values[col] for col in columns]
 
-    _, tmp_artifacts_root = tmp_folder_path()
-    df.to_csv(os.path.join(tmp_artifacts_root, f'test_{args.backend}.csv'))
+        _, tmp_artifacts_root = tmp_folder_path()
+        df.to_csv(os.path.join(tmp_artifacts_root, f'test_{args.backend}.csv'))
 
 
 if __name__ == '__main__':
@@ -321,10 +271,16 @@ if __name__ == '__main__':
     parser.add_argument("--depth", default=2, type=int)
     parser.add_argument("--artifact", required=False, type=str)
     parser.add_argument("--backend", default='numpy', choices={'nn', 'numpy', 'scipy'})
-    parser.add_argument("--mode", default='main', choices={'main', 'encode', 'decode'})
+    parser.add_argument("--shift-type", default='left', choices={'left', 'right'})
+    parser.add_argument("--mode",
+                        default='main',
+                        choices={'main', 'encode', 'decode'})
 
     args = parser.parse_args()
     print(args)
+
+    project_root, tmp_artifacts_root = tmp_folder_path()
+    os.makedirs(tmp_artifacts_root, exist_ok=True)
 
     if args.mode == 'main':
         main(args)

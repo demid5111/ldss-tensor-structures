@@ -38,6 +38,14 @@
     pip install -r requirements_dev.txt
     ```
 
+## Benchmarking the solution
+
+1. Add `PROJECT_ROOT` to `PYTHONPATH`. Execute the following command from the project root:
+   `export PYTHONPATH=$(pwd)`
+
+2. Run the benchmarking script providing it with proper backend: `nn`, `numpy` or `scipy`.
+   For example: `python demo/benchmark/benchmark_decoding.py --mode main --backend nn`
+
 ## Running tests
 
 1. Without a coverage:

@@ -27,7 +27,7 @@ def unshift_matrix(role, filler_size, max_depth, name='unshift', mode='dense'):
     elif mode == 'sparse':
         res_matrix = scipy.sparse.lil_matrix((num_rows, num_cols))
     else:
-        raise NotImplementedError(f'Given mode {mode} is not supported for shift_matrix() method')
+        raise NotImplementedError(f'Given mode {mode} is not supported for unshift_matrix() method')
 
     for row_index, col_index in zip(range(num_rows), range(0, num_cols - role_len + 1, role_len)):
         res_matrix[row_index, col_index: col_index + role_len] = role

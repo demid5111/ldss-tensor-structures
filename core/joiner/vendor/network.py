@@ -52,7 +52,7 @@ def shift_matrix(role, filler_size, max_depth, name, mode='dense'):
     role_len = role.shape[0]
 
     # constructing I (identity matrix of the given depth)
-    num_cols = reduce(lambda acc, depth: acc + (filler_size * (2 ** depth)), range(max_depth), 0)
+    num_cols = reduce(lambda acc, depth: acc + (filler_size * (role_len ** depth)), range(max_depth), 0)
     num_rows = num_cols * role_len  # + 1 no row for magic epsilon (p. 315) - is it a root?
 
     if mode == 'dense':
@@ -64,8 +64,8 @@ def shift_matrix(role, filler_size, max_depth, name, mode='dense'):
 
     for row_index, col_index in zip(range(0, num_rows - role_len + 1, role_len), range(num_cols)):
         # broadcast will not work for lil_matrix use case
-        res_matrix[row_index, col_index] = role[0]
-        res_matrix[row_index+1, col_index] = role[1]
+        for role_component_index, role_component in enumerate(role):
+            res_matrix[row_index+role_component_index, col_index] = role_component
     return res_matrix
 
 

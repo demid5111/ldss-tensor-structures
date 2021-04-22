@@ -28,7 +28,7 @@ class Model2Tuple:
         return (
                 isinstance(other, Model2Tuple) and
                 self.term_index == other.term_index and
-                self.alpha == other.alpha and
+                self.alpha - other.alpha < 0.1 and
                 self.weight == other.weight and
                 self.linguistic_scale_size == other.linguistic_scale_size
         )

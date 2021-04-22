@@ -58,7 +58,7 @@ class FillerFactory:
         value_position = np.where(index_vector > 0)[0][0]
         term_index = int(index_vector[value_position])
 
-        alpha_position = np.where(alpha_vector > 0)
+        alpha_position = np.where(alpha_vector != 0)
         if alpha_position[0]:
             alpha_position = alpha_position[0][0]
             alpha = float(alpha_vector[alpha_position]) / (FillerFactory.alpha_precision * 10)
@@ -135,7 +135,6 @@ def build_n_roles_join_branch(roles, fillers_shapes):
     constant_inputs = []
     variable_inputs = []
     matmul_layers = []
-    concats = []
     for role_index, role in enumerate(roles):
         shift_input = constant_input(role, filler_len, max_depth, f'constant_input_(cons{role_index})', shift_matrix)
         constant_inputs.append(shift_input)
@@ -143,30 +142,25 @@ def build_n_roles_join_branch(roles, fillers_shapes):
         inputs, matmul_layer, concat = filler_input_subgraph(fillers_shapes, shift_input)
         variable_inputs.extend(inputs)
         matmul_layers.append(matmul_layer)
-        concats.append(concat)
 
     sum_layer = Add()(matmul_layers)
 
     return (
                tuple(constant_inputs),
                tuple(variable_inputs)
-           ), sum_layer, constant_inputs
+           ), sum_layer
 
 
 def build_2_tuple_encoder_network(roles, fillers_shapes):
-    inputs, output, concats = build_n_roles_join_branch(roles, fillers_shapes)
+    inputs, output = build_n_roles_join_branch(roles, fillers_shapes)
     const_inputs, variable_inputs = inputs
-    # left_inputs, right_inputs = variable_inputs
 
     return Model(
         inputs=[
             *const_inputs,
             *variable_inputs
         ],
-        outputs=[
-            output,
-            *concats
-        ]
+        outputs=output
     )
 
 

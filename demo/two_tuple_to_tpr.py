@@ -1,16 +1,10 @@
 import numpy as np
 
-import keras.backend as K
-from keras.layers import Add, Input, Reshape, Flatten, concatenate, Lambda
-from keras.models import Model
-
-from core.active_passive_net.classifier.vendor.network import build_universal_extraction_branch
 from core.active_passive_net.utils import elementary_join
-from core.decoder.vendor.network import mat_transpose
 from core.joiner.utils import generate_shapes
-from core.joiner.vendor.network import build_tree_joiner_network, constant_input, shift_matrix, mat_mul
+from core.joiner.vendor.network import build_tree_joiner_network
 from core.model_2_tuple.core import Model2Tuple
-from core.unshifter.vendor.network import unshift_matrix
+from core.model_2_tuple.decoder.vendor.network import build_decode_model_2_tuple_network
 from core.utils import flattenize_per_tensor_representation
 
 
@@ -107,64 +101,7 @@ class FillerFactory:
         return index, alpha, weight
 
 
-def filler_input_subgraph(fillers_shapes, shift_layer):
-    subtree_as_inputs = []
-    for shape in fillers_shapes:
-        i = Input(shape=(*shape[1:],), batch_shape=(*shape,))
-        subtree_as_inputs.append(i)
-    reshape_zero_level = Reshape((1, 1, *fillers_shapes[0]))(subtree_as_inputs[0])
-    reshape_first_level = Reshape((1, *fillers_shapes[1]))(subtree_as_inputs[1])
-    inputs_before_flattens = [
-        reshape_zero_level,
-        reshape_first_level,
-        #     *subtree_as_inputs[2:]
-    ]
-    flatten_layers = [Flatten()(input_layer) for input_layer in inputs_before_flattens]
-    concat_layer = concatenate(flatten_layers)
-    transpose_layer = Lambda(mat_transpose)(concat_layer)
-    return subtree_as_inputs, Lambda(mat_mul)([
-        shift_layer,
-        transpose_layer
-    ]), concat_layer
-
-
-def build_n_roles_join_branch(roles, fillers_shapes):
-    filler_len = fillers_shapes[0][1]
-    max_depth = len(fillers_shapes)
-
-    constant_inputs = []
-    variable_inputs = []
-    matmul_layers = []
-    for role_index, role in enumerate(roles):
-        shift_input = constant_input(role, filler_len, max_depth, f'constant_input_(cons{role_index})', shift_matrix)
-        constant_inputs.append(shift_input)
-
-        inputs, matmul_layer, concat = filler_input_subgraph(fillers_shapes, shift_input)
-        variable_inputs.extend(inputs)
-        matmul_layers.append(matmul_layer)
-
-    sum_layer = Add()(matmul_layers)
-
-    return (
-               tuple(constant_inputs),
-               tuple(variable_inputs)
-           ), sum_layer
-
-
-def build_2_tuple_encoder_network(roles, fillers_shapes):
-    inputs, output = build_n_roles_join_branch(roles, fillers_shapes)
-    const_inputs, variable_inputs = inputs
-
-    return Model(
-        inputs=[
-            *const_inputs,
-            *variable_inputs
-        ],
-        outputs=output
-    )
-
-
-def encode_model_2_tuple(model_2_tuple: Model2Tuple):
+def encode_model_2_tuple(model_2_tuple: Model2Tuple) -> np.array:
     roles = np.array([
         [1, 0, 0],  # r_i
         [0, 1, 0],  # r_alpha
@@ -181,7 +118,7 @@ def encode_model_2_tuple(model_2_tuple: Model2Tuple):
                                      role_shape=SINGLE_ROLE_SHAPE,
                                      filler_shape=SINGLE_FILLER_SHAPE)
 
-    keras_joiner = build_2_tuple_encoder_network(roles=roles, fillers_shapes=fillers_shapes)
+    keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
     fillers = np.array([filler_index, filler_alpha, filler_weight])
     model_2_tuple_encoded = elementary_join(joiner_network=keras_joiner,
@@ -194,53 +131,6 @@ def encode_model_2_tuple(model_2_tuple: Model2Tuple):
                                                 filler_weight
                                             ))
     return model_2_tuple_encoded
-
-
-def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth):
-    input_num_elements, flattened_tree_num_elements = unshift_matrix(dual_roles[0], filler_len, max_depth - 1).shape
-    shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_input = Input(shape=(*shape,), batch_shape=(*shape,))
-
-    index_const_inputs, index_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
-                                                                                roles=dual_roles,
-                                                                                filler_len=filler_len,
-                                                                                max_depth=max_depth - 1,
-                                                                                stop_level=max_depth - 1,
-                                                                                role_extraction_order=[0],
-                                                                                prefix='extracting_index')
-    index_raw_output = Lambda(lambda x: K.tf.reshape(x, (filler_len,)))(index_raw_output)
-
-    alpha_const_inputs, alpha_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
-                                                                                roles=dual_roles,
-                                                                                filler_len=filler_len,
-                                                                                max_depth=max_depth - 1,
-                                                                                stop_level=max_depth - 1,
-                                                                                role_extraction_order=[1],
-                                                                                prefix='extracting_alpha')
-    alpha_raw_output = Lambda(lambda x: K.tf.reshape(x, (filler_len,)))(alpha_raw_output)
-
-    weight_const_inputs, weight_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
-                                                                                  roles=dual_roles,
-                                                                                  filler_len=filler_len,
-                                                                                  max_depth=max_depth - 1,
-                                                                                  stop_level=max_depth - 1,
-                                                                                  role_extraction_order=[2],
-                                                                                  prefix='extracting_weight')
-    weight_raw_output = Lambda(lambda x: K.tf.reshape(x, (filler_len,)))(weight_raw_output)
-
-    return Model(
-        inputs=[
-            *index_const_inputs,
-            *alpha_const_inputs,
-            *weight_const_inputs,
-            flattened_input
-        ],
-        outputs=[
-            index_raw_output,
-            alpha_raw_output,
-            weight_raw_output
-        ]
-    )
 
 
 def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
@@ -267,18 +157,31 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
     return Model2Tuple(term_index=term_index, alpha=alpha, weight=weight)
 
 
-if __name__ == '__main__':
+def aggregate_and_check(model_2_tuple_a, model_2_tuple_b):
+    if model_2_tuple_a.linguistic_scale_size != model_2_tuple_b.linguistic_scale_size:
+        raise ValueError('2-tuple elements should be from the single scale!')
+
+    aggregation = model_2_tuple_a.to_number() * model_2_tuple_a.weight + \
+                  model_2_tuple_b.to_number() * model_2_tuple_b.weight
+    mta_result = Model2Tuple.from_number(beta=aggregation,
+                                         linguistic_scale_size=model_2_tuple_a.linguistic_scale_size)
+
+    mta_result_encoded = encode_model_2_tuple(mta_result)
+    decoded_2_tuple = decode_model_2_tuple_tpr(mta_result_encoded)
+
+    if mta_result != decoded_2_tuple:
+        raise ValueError('Encoding is working with information loss!')
+
+
+def main():
     print('Converting 2-tuple to TPR')
     linguistic_scale_size = 5
     first_tuple = Model2Tuple(term_index=3, alpha=0, linguistic_scale_size=linguistic_scale_size)
     second_tuple = Model2Tuple(term_index=2, alpha=0, linguistic_scale_size=linguistic_scale_size)
 
-    mta_result = Model2Tuple.from_number(beta=(first_tuple.to_number() + second_tuple.to_number()) / 2,
-                                         linguistic_scale_size=linguistic_scale_size)
+    aggregate_and_check(first_tuple, second_tuple)
+    print('Converting 2-tuple to TPR and back works with no information loss!')
 
-    print(f'MTA({first_tuple}, {second_tuple}) => {mta_result}')
 
-    mta_result_encoded = encode_model_2_tuple(mta_result)
-    decoded_2_tuple = decode_model_2_tuple_tpr(mta_result_encoded)
-
-    assert mta_result == decoded_2_tuple, 'Encoding is working with no information loss'
+if __name__ == '__main__':
+    main()

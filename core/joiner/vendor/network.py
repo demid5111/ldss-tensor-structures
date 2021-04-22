@@ -65,34 +65,31 @@ def shift_matrix(role, filler_size, max_depth, name, mode='dense'):
     for row_index, col_index in zip(range(0, num_rows - role_len + 1, role_len), range(num_cols)):
         # broadcast will not work for lil_matrix use case
         for role_component_index, role_component in enumerate(role):
-            res_matrix[row_index+role_component_index, col_index] = role_component
+            res_matrix[row_index + role_component_index, col_index] = role_component
     return res_matrix
 
 
 def build_join_branch(roles, fillers_shapes):
     filler_len = fillers_shapes[0][1]
     max_depth = len(fillers_shapes)
-    left_shift_input = constant_input(roles[0], filler_len, max_depth, 'constant_input_(cons0)', shift_matrix)
-    left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
 
-    right_shift_input = constant_input(roles[1], filler_len, max_depth, 'constant_input_(cons1)', shift_matrix)
-    right_inputs, right_matmul_layer = filler_input_subgraph(fillers_shapes, right_shift_input)
+    constant_inputs = []
+    variable_inputs = []
+    matmul_layers = []
+    for role_index, role in enumerate(roles):
+        shift_input = constant_input(role, filler_len, max_depth, f'constant_input_(cons{role_index})', shift_matrix)
+        constant_inputs.append(shift_input)
 
-    sum_layer = Add()([
-        left_matmul_layer,
-        right_matmul_layer
-    ])
+        inputs, matmul_layer = filler_input_subgraph(fillers_shapes, shift_input)
+        variable_inputs.append(inputs)
+        matmul_layers.append(matmul_layer)
+
+    sum_layer = Add()(matmul_layers)
 
     return (
-        (
-            left_shift_input,
-            right_shift_input
-        ),
-        (
-            left_inputs,
-            right_inputs
-        )
-    ), sum_layer
+               tuple(constant_inputs),
+               tuple(variable_inputs)
+           ), sum_layer
 
 
 def build_tree_joiner_network(roles, fillers_shapes):
@@ -108,15 +105,14 @@ def build_tree_joiner_network(roles, fillers_shapes):
     :param fillers_shapes:
     :return:
     """
-
     inputs, output = build_join_branch(roles, fillers_shapes)
     const_inputs, variable_inputs = inputs
-    left_inputs, right_inputs = variable_inputs
+
+    model_inputs = [*const_inputs]
+    for inputs_list in variable_inputs:
+        model_inputs.extend(inputs_list)
 
     return Model(
-        inputs=[
-            *const_inputs,
-            *left_inputs,
-            *right_inputs
-        ],
-        outputs=output)
+        inputs=model_inputs,
+        outputs=output
+    )

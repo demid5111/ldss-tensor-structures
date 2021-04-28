@@ -18,8 +18,8 @@ def build_encoder_network(input_shapes):
     fillers_shape = input_shapes[0]
     roles_shape = input_shapes[1]
 
-    input_fillers_layer = Input(shape=fillers_shape[1:], batch_shape=fillers_shape)
-    input_roles_layer = Input(shape=roles_shape[1:], batch_shape=roles_shape)
+    input_fillers_layer = Input(shape=fillers_shape[1:])
+    input_roles_layer = Input(shape=roles_shape[1:])
 
     transposed_role_layer = transposer(input_roles_layer)
     binding_tensors_layer = binding_cell([input_fillers_layer, transposed_role_layer])

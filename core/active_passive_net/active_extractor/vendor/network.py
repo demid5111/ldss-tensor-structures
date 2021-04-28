@@ -1,4 +1,4 @@
-import keras.backend as K
+import tensorflow.keras.backend as K
 import numpy as np
 from keras import Input
 from keras.layers import Lambda, Cropping1D, Concatenate
@@ -18,9 +18,9 @@ def crop_tensor(layer, role, filler_len, stop_level):
 
 
 def custom_cropping_layer(input_layer, crop_from_beginning, crop_from_end, input_tensor_length, final_tensor_length):
-    reshape_for_crop = Lambda(lambda x: K.tf.reshape(x, (1, input_tensor_length, 1)))(input_layer)
+    reshape_for_crop = Lambda(lambda x: K.reshape(x, (1, input_tensor_length, 1)))(input_layer)
     clip_first_level = Cropping1D(cropping=(crop_from_beginning, crop_from_end))(reshape_for_crop)
-    return Lambda(lambda x: K.tf.reshape(x, (final_tensor_length, 1)))(clip_first_level)
+    return Lambda(lambda x: K.reshape(x, (final_tensor_length, 1)))(clip_first_level)
 
 
 def custom_constant_layer(const_size, name, np_constant=None):
@@ -28,10 +28,10 @@ def custom_constant_layer(const_size, name, np_constant=None):
         np_constant = np.zeros((const_size, 1))
     else:
         np_constant = np.reshape(np_constant, (*np_constant.shape, 1))
-    tf_constant = K.constant(np_constant)
-    const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32', name=name)
+    tf_constant = K.constant(np_constant, dtype='float32')
+    const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
     # TODO: reshaping constant input??
-    return Lambda(lambda x: K.tf.reshape(x, np_constant.shape))(const_fake_extender), const_fake_extender
+    return Lambda(lambda x: K.reshape(x, np_constant.shape))(const_fake_extender), const_fake_extender
 
 
 def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_roles, filler_len, max_depth):
@@ -96,13 +96,13 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                            name='active_fake_extender_verb_agent')
     concatenate_verb = Concatenate(axis=0)([verb_extraction_output, tmp_reshaped_fake, tmp_reshaped_fake])
     # TODO: why is there a constant 3?
-    reshaped_verb = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_verb)
+    reshaped_verb = Lambda(lambda x: K.reshape(x, (filler_len * 3, 1)))(concatenate_verb)
 
     # TODO: reshape by 2, why is there a constant 2?
-    tmp_reshaped_agentxr0_pxr1 = Lambda(lambda x: K.tf.reshape(x, (filler_len * 2, 1)))(agentxr0_pxr1_output)
+    tmp_reshaped_agentxr0_pxr1 = Lambda(lambda x: K.reshape(x, (filler_len * 2, 1)))(agentxr0_pxr1_output)
     concatenate_agentxr0_pxr1 = Concatenate(axis=0)([tmp_reshaped_fake, tmp_reshaped_agentxr0_pxr1])
     # TODO: why is there a constant 3?
-    reshaped_agentxr0_pxr1 = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_agentxr0_pxr1)
+    reshaped_agentxr0_pxr1 = Lambda(lambda x: K.reshape(x, (filler_len * 3, 1)))(concatenate_agentxr0_pxr1)
 
     semantic_tree_const_inputs, semantic_tree_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,

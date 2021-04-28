@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import tensorflow as tf
 
 from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
@@ -106,6 +107,7 @@ class ElementaryJoinTest(unittest.TestCase):
 
 class APNETIntegrationTest(unittest.TestCase):
     def test_active_voice_sentence_ideal(self):
+        tf.compat.v1.disable_eager_execution()
         t_active_voice = encode_active_voice_sentence(roles=roles,
                                                       fillers=fillers,
                                                       fillers_order=order_case_active)
@@ -127,6 +129,7 @@ class APNETIntegrationTest(unittest.TestCase):
             np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)
 
     def test_passive_voice_sentence_ideal(self):
+        tf.compat.v1.disable_eager_execution()
         t_passive_voice = encode_passive_voice_sentence(roles=roles,
                                                         fillers=fillers,
                                                         fillers_order=order_case_passive)

@@ -1,4 +1,4 @@
-import keras.backend as K
+import tensorflow.keras.backend as K
 import numpy as np
 from keras import Input
 from keras.layers import Lambda, Cropping1D, Add, Concatenate
@@ -75,9 +75,9 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     p_extraction_const_inputs, p_raw_output, current_num_elements = p_branch
     _, flattened_num_elements = unshift_matrix(roles[0], filler_len, stop_level_for_p).shape
     # TODO: insert cropping here
-    reshape_for_crop = Lambda(lambda x: K.tf.reshape(x, (1, flattened_num_elements + filler_len, 1)))(p_raw_output)
+    reshape_for_crop = Lambda(lambda x: K.reshape(x, (1, flattened_num_elements + filler_len, 1)))(p_raw_output)
     clip_first_level = Cropping1D(cropping=(0, flattened_num_elements))(reshape_for_crop)
-    p_extraction_output = Lambda(lambda x: K.tf.reshape(x, (filler_len, 1)))(clip_first_level)
+    p_extraction_output = Lambda(lambda x: K.reshape(x, (filler_len, 1)))(clip_first_level)
 
     # TODO: define how to tackle extractions not till the bottom of structure
     # given that we have all fillers maximum joining depth is equal to 1
@@ -94,23 +94,22 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     # later we have to join two subtrees of different depth. for that we have to
     # make filler of verb of the same depth - make fake constant layer
     np_constant = np.zeros((filler_len, 1))
-    tf_constant = K.constant(np_constant)
+    tf_constant = K.constant(np_constant, dtype='float32')
     const_fake_extender = Input(tensor=tf_constant,
-                                batch_shape=np_constant.shape,
                                 shape=np_constant.shape,
-                                dtype='int32',
+                                dtype='float32',
                                 name='passive_fake_extender_verb_agent')
     concatenate_verb = Concatenate(axis=0)([verb_extraction_output, const_fake_extender, const_fake_extender])
     # TODO: why is there a constant 3?
-    reshaped_verb = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_verb)
+    reshaped_verb = Lambda(lambda x: K.reshape(x, (filler_len * 3, 1)))(concatenate_verb)
 
     # TODO: reshape by 2, why is there a constant 2?
-    tmp_reshaped_agentxr0_pxr1 = Lambda(lambda x: K.tf.reshape(x, (filler_len * 2, 1)))(agentxr0_pxr1_output)
+    tmp_reshaped_agentxr0_pxr1 = Lambda(lambda x: K.reshape(x, (filler_len * 2, 1)))(agentxr0_pxr1_output)
     # TODO: reshaping constant input??
-    tmp_reshaped_fake = Lambda(lambda x: K.tf.reshape(x, (filler_len, 1)))(const_fake_extender)
+    tmp_reshaped_fake = Lambda(lambda x: K.reshape(x, (filler_len, 1)))(const_fake_extender)
     concatenate_agentxr0_pxr1 = Concatenate(axis=0)([tmp_reshaped_fake, tmp_reshaped_agentxr0_pxr1])
     # TODO: why is there a constant 3?
-    reshaped_agentxr0_pxr1 = Lambda(lambda x: K.tf.reshape(x, (filler_len * 3, 1)))(concatenate_agentxr0_pxr1)
+    reshaped_agentxr0_pxr1 = Lambda(lambda x: K.reshape(x, (filler_len * 3, 1)))(concatenate_agentxr0_pxr1)
 
     semantic_tree_const_inputs, semantic_tree_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,

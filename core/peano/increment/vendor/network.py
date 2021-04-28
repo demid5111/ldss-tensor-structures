@@ -158,7 +158,7 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
     # Number to be incremented
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
+    flattened_incrementing_input = Input(shape=(*shape,))
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,

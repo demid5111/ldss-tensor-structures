@@ -30,9 +30,8 @@ def build_active_passive_network(roles, dual_roles, fillers, tree_shape):
         max_depth=max_depth)
 
     np_constant = np.array([-1])
-    tf_constant = K.constant(np_constant)
-    const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                                name='active_voice_neg_1')
+    tf_constant = K.constant(np_constant, dtype='float32')
+    const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name='active_voice_neg_1')
     sum_is_passive_const_neg_1 = Add()([classification_output, const_neg_1])
     is_active = Multiply()([sum_is_passive_const_neg_1, const_neg_1])
     active_branch_input = Lambda(lambda tensors: tensors[0] * tensors[1])([apnet_variable_input, is_active])

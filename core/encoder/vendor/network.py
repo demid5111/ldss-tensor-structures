@@ -4,7 +4,7 @@ from keras.models import Model
 
 
 def mul_vec_on_vec(tensors):
-    return [tensors[0][i] * tensors[1][i] for i in range(tensors[0].shape[0])]
+    return [tensors[0][i] * tensors[1][i] for i in range(tensors[0][0].shape[0])]
 
 
 def prepare_shapes(filler_vectors, roles_vectors):

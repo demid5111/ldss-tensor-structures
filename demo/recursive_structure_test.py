@@ -1,10 +1,14 @@
 import unittest
 import numpy as np
+import tensorflow as tf
 
 from demo.recursive_structure import pre_process_and_run
 
 
 class DecodeIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     def test_ideal1(self):
         """
         First use case for the structure that has nesting equal 1

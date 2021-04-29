@@ -27,8 +27,8 @@ def build_filler_decoder_network(input_shapes):
     tensor_representation_shape = input_shapes[0]
     dual_roles_shape = input_shapes[1]
 
-    input_tensor_representation_layer = Input(batch_shape=tensor_representation_shape)
-    input_dual_roles_layer = Input(batch_shape=dual_roles_shape)
+    input_tensor_representation_layer = Input(shape=tensor_representation_shape[1:], batch_size=1)
+    input_dual_roles_layer = Input(shape=dual_roles_shape[1:], batch_size=1)
 
     transposed_dual_role_layer = transposer(input_dual_roles_layer)
     binding_tensors_layer = unbinding_cell([
@@ -36,7 +36,7 @@ def build_filler_decoder_network(input_shapes):
         transposed_dual_role_layer
     ])
 
-    transposed_fillers = transposer_matrix(binding_tensors_layer)
+    transposed_fillers = transposer_matrix(binding_tensors_layer[0])
 
     return Model(
         inputs=[

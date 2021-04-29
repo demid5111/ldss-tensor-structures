@@ -9,6 +9,7 @@ from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
 from keras.models import Model
 
 from core.decoder.vendor.network import mat_transpose
+from core.utils import keras_constant_layer
 
 
 def mat_mul(tensors):
@@ -38,8 +39,10 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
 
 def constant_input(role, filler_len, max_depth, name, matrix_creator):
     np_constant = matrix_creator(role, filler_len, max_depth, name)
-    tf_constant = K.constant(np_constant, dtype='float32')
-    return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
+    return keras_constant_layer(np_constant, name=name)
+    # np_constant = np_constant.reshape((1, *np_constant.shape))
+    # tf_constant = K.constant(np_constant, dtype='float32')
+    # return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
 
 
 def shift_matrix(role, filler_size, max_depth, name, mode='dense'):

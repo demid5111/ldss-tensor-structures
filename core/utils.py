@@ -1,5 +1,6 @@
 import numpy as np
-
+from keras import backend as K
+from keras import Input
 
 def flattenize_per_tensor_representation(blobs):
     length = sum(map(lambda b: b.size, blobs))
@@ -13,3 +14,9 @@ def flattenize_per_tensor_representation(blobs):
 
 def get_filler_by(name, order, fillers):
     return fillers[order.index(name)]
+
+
+def keras_constant_layer(np_constant, name, batch_size=1):
+    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+    tf_constant = K.constant(np_constant, dtype='float32')
+    return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)

@@ -125,7 +125,7 @@ class APNETIntegrationTest(unittest.TestCase):
 
         for filler_name, filler_raw_encoded in res.items():
             expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
-            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            filler_encoded = np.reshape(filler_raw_encoded[0][:len(expected_filler_value)], expected_filler_value.shape)
             np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)
 
     def test_passive_voice_sentence_ideal(self):
@@ -147,5 +147,5 @@ class APNETIntegrationTest(unittest.TestCase):
 
         for filler_name, filler_raw_encoded in res.items():
             expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
-            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            filler_encoded = np.reshape(filler_raw_encoded[0][:len(expected_filler_value)], expected_filler_value.shape)
             np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)

@@ -77,13 +77,13 @@ def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_o
         ],
         outputs=output)
 
-# TODO: rename to correspong to classification
+# TODO: rename to correspond to classification
 def build_real_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
     filler_len = fillers[0].shape[0]
     max_depth = len(tree_shape) - 1
     _, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_tree_input = Input(shape=(*shape,), batch_shape=(*shape,))
+    flattened_tree_input = Input(shape=(*shape,), batch_size=1)
 
     extraction_inputs, extraction_output, _ = build_universal_extraction_branch(model_input=flattened_tree_input,
                                                                                 roles=roles,

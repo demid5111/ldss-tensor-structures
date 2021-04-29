@@ -1,7 +1,7 @@
 from functools import reduce
 
 import numpy as np
-import keras.backend as K
+import tensorflow as tf
 
 from core.encoder.vendor.network import build_encoder_network as keras_encoder_network, \
     prepare_shapes as prepare_encoder_shapes
@@ -117,6 +117,7 @@ def print_results(fillers_restored, fillers_vectors, filler_role_mapping, filler
 
 
 if __name__ == '__main__':
+    tf.compat.v1.disable_eager_execution()
     """
     First use case for the structure that has nesting equal 1
 
@@ -172,24 +173,24 @@ if __name__ == '__main__':
     }
     order_case_2 = ['A', 'B', 'C', 'D']
 
-    with K.get_session():
-        tr_1, fillers_restored_case_1, final_dual_roles_case_1 = pre_process_and_run(roles_vectors=roles_case_1,
-                                                                                     fillers_vectors=fillers_case_1,
-                                                                                     filler_role_mapping=mapping_case_1,
-                                                                                     filler_order=order_case_1)
-        print_results(fillers_restored=fillers_restored_case_1,
-                      fillers_vectors=fillers_case_1,
-                      filler_role_mapping=mapping_case_1,
-                      filler_order=order_case_1,
-                      final_dual_roles=final_dual_roles_case_1)
+    # with K.get_session():
+    tr_1, fillers_restored_case_1, final_dual_roles_case_1 = pre_process_and_run(roles_vectors=roles_case_1,
+                                                                                 fillers_vectors=fillers_case_1,
+                                                                                 filler_role_mapping=mapping_case_1,
+                                                                                 filler_order=order_case_1)
+    print_results(fillers_restored=fillers_restored_case_1,
+                  fillers_vectors=fillers_case_1,
+                  filler_role_mapping=mapping_case_1,
+                  filler_order=order_case_1,
+                  final_dual_roles=final_dual_roles_case_1)
 
-        tr_2, fillers_restored_case_2, final_dual_roles_case_2 = pre_process_and_run(roles_vectors=roles_case_2,
-                                                                                     fillers_vectors=fillers_case_2,
-                                                                                     filler_role_mapping=mapping_case_2,
-                                                                                     filler_order=order_case_2)
+    tr_2, fillers_restored_case_2, final_dual_roles_case_2 = pre_process_and_run(roles_vectors=roles_case_2,
+                                                                                 fillers_vectors=fillers_case_2,
+                                                                                 filler_role_mapping=mapping_case_2,
+                                                                                 filler_order=order_case_2)
 
-        print_results(fillers_restored=fillers_restored_case_2,
-                      fillers_vectors=fillers_case_2,
-                      filler_role_mapping=mapping_case_2,
-                      filler_order=order_case_2,
-                      final_dual_roles=final_dual_roles_case_2)
+    print_results(fillers_restored=fillers_restored_case_2,
+                  fillers_vectors=fillers_case_2,
+                  filler_role_mapping=mapping_case_2,
+                  filler_order=order_case_2,
+                  final_dual_roles=final_dual_roles_case_2)

@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import tensorflow as tf
 
 from core.active_passive_net.vendor.network import build_active_passive_network
 from core.joiner.vendor.network import build_tree_joiner_network
@@ -26,6 +27,9 @@ SINGLE_FILLER_SHAPE = fillers[0].shape
 
 
 class ElementaryJoinTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     def test_ideal1(self):
         """
         First use case for the structure that has nesting equal 1
@@ -105,6 +109,9 @@ class ElementaryJoinTest(unittest.TestCase):
 
 
 class APNETIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     def test_active_voice_sentence_ideal(self):
         t_active_voice = encode_active_voice_sentence(roles=roles,
                                                       fillers=fillers,
@@ -123,7 +130,7 @@ class APNETIntegrationTest(unittest.TestCase):
 
         for filler_name, filler_raw_encoded in res.items():
             expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
-            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            filler_encoded = np.reshape(filler_raw_encoded[0][:len(expected_filler_value)], expected_filler_value.shape)
             np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)
 
     def test_passive_voice_sentence_ideal(self):
@@ -144,5 +151,5 @@ class APNETIntegrationTest(unittest.TestCase):
 
         for filler_name, filler_raw_encoded in res.items():
             expected_filler_value = get_filler_by(name=filler_name, order=order_case_active, fillers=fillers)
-            filler_encoded = np.reshape(filler_raw_encoded[:len(expected_filler_value)], expected_filler_value.shape)
+            filler_encoded = np.reshape(filler_raw_encoded[0][:len(expected_filler_value)], expected_filler_value.shape)
             np.testing.assert_array_almost_equal(expected_filler_value, filler_encoded)

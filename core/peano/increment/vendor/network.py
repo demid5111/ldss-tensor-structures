@@ -8,7 +8,7 @@ from core.active_passive_net.classifier.vendor.network import build_one_level_ex
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch, create_shift_matrix_as_input
 from core.peano.utils import number_to_tree
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import flattenize_per_tensor_representation
+from core.utils import flattenize_per_tensor_representation, keras_constant_layer
 
 
 def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth):
@@ -47,17 +47,14 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     )
 
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape
-    reshape_for_pool = Lambda(lambda x: K.tf.reshape(x, (1, target_elements, 1)))(one_tensor_output)
+    reshape_for_pool = Lambda(lambda x: K.reshape(x, (1, target_elements, 1)))(one_tensor_output)
     global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
     return const_inputs, Lambda(normalization)(global_max_pool), one_tensor_output
 
 
 def check_if_zero_branch(flag_input, block_id):
     np_constant = np.array([-1])
-    tf_constant = K.constant(np_constant)
-    const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                        name='increment_neg_{}'.format(block_id))
-
+    const_neg_1 = keras_constant_layer(np_constant, 'increment_neg_{}'.format(block_id))
     sum_is_zero_const = Add()([flag_input, const_neg_1])
     return const_neg_1, Multiply()([sum_is_zero_const, const_neg_1])
 
@@ -104,7 +101,8 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         left_shift_input=left_shift_input,
         right_shift_input=right_shift_input
     )
-    next_number_output = Concatenate(axis=0)([constant_input_filler, next_number])
+    next_number_reshaped = Lambda(lambda x: K.reshape(x, (1, *next_number.shape)))(next_number)
+    next_number_output = Concatenate(axis=1)([constant_input_filler, next_number_reshaped])
     cropped_number_after_increment = make_output_same_length_as_input(layer_to_crop=next_number_output,
                                                                       role=roles[1],
                                                                       filler_len=filler_len,
@@ -158,7 +156,7 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
     # Number to be incremented
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,))
+    flattened_incrementing_input = Input(shape=(*shape,), batch_size=1)
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,

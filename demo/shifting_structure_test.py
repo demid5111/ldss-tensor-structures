@@ -1,11 +1,16 @@
 import unittest
 import numpy as np
+import tensorflow as tf
 
 from core.joiner.vendor.network import build_tree_joiner_network
-from demo.shifting_structure import generate_shapes, generate_input_placeholder, extract_per_level_tensor_representation_after_shift
+from demo.shifting_structure import generate_shapes, generate_input_placeholder, \
+    extract_per_level_tensor_representation_after_shift
 
 
 class ShiftingIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     def test_ideal1(self):
         """
         First use case for the structure that should be shifted left
@@ -46,6 +51,7 @@ class ShiftingIntegrationTest(unittest.TestCase):
             *left_subtree_placeholder,
             *right_subtree_placeholder
         ])
+        fillers_joined = fillers_joined.reshape((*fillers_joined.shape[1:],))
 
         expected_subtree = np.array(
             [

@@ -1,5 +1,6 @@
 import unittest
 from typing import Tuple
+import tensorflow as tf
 
 import numpy as np
 
@@ -33,6 +34,9 @@ class TensorAssertions:
 
 
 class IncrementTest(unittest.TestCase, TensorAssertions):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     @staticmethod
     def increment(a, max_number=None) -> Tuple[any, int]:
         if max_number is None:
@@ -48,10 +52,12 @@ class IncrementTest(unittest.TestCase, TensorAssertions):
                                                           fillers=fillers,
                                                           max_depth=max_tree_depth)
 
+        a_tree_flattened = a_tree_flattened.reshape((1, *a_tree_flattened.shape, 1))
         new_number = keras_increment_network.predict_on_batch([
             a_tree_flattened
         ])
 
+        new_number = new_number.reshape((*new_number.shape[1:], ))
         return (
             extract_per_level_tensor_representation_after_unshift(new_number, max_tree_depth,
                                                                   SINGLE_ROLE_SHAPE,

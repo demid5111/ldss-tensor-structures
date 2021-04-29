@@ -31,6 +31,7 @@
           A     P
 """
 import numpy as np
+import tensorflow as tf
 
 from core.active_passive_net.classifier.vendor.network import build_filler_extractor_network, \
     build_real_filler_extractor_network
@@ -60,6 +61,7 @@ def elementary_extract(extract_network, input_structure_max_shape, basic_roles, 
     extracted_child = extract_network.predict_on_batch([
         *prepared_for_unshift
     ])
+    extracted_child = extracted_child.reshape((*extracted_child.shape[1:], ))
 
     return extract_per_level_tensor_representation_after_unshift(
         extracted_child,
@@ -70,6 +72,7 @@ def elementary_extract(extract_network, input_structure_max_shape, basic_roles, 
 
 def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
     tree_for_unshift = flattenize_per_tensor_representation(encoded_sentence)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_semantic_tree = ap_net.predict_on_batch([
         tree_for_unshift
     ])
@@ -90,6 +93,7 @@ def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                             stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_verb = keras_decode_verb.predict_on_batch([
         tree_for_unshift
     ])
@@ -101,6 +105,7 @@ def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                              stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_agent = keras_decode_agent.predict_on_batch([
         tree_for_unshift
     ])
@@ -112,6 +117,7 @@ def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                                stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_patient = keras_decode_patient.predict_on_batch([
         tree_for_unshift
     ])
@@ -125,6 +131,7 @@ def check_passive_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
 
 def check_active_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
     tree_for_unshift = flattenize_per_tensor_representation(encoded_sentence)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_semantic_tree = ap_net.predict_on_batch([
         tree_for_unshift
     ])
@@ -145,6 +152,7 @@ def check_active_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                             stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_verb = keras_decode_verb.predict_on_batch([
         tree_for_unshift
     ])
@@ -156,6 +164,7 @@ def check_active_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                              stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_agent = keras_decode_agent.predict_on_batch([
         tree_for_unshift
     ])
@@ -167,6 +176,7 @@ def check_active_case(ap_net, encoded_sentence, roles, fillers, dual_roles):
                                                                stop_level=1)
 
     tree_for_unshift = flattenize_per_tensor_representation(syntax_tree)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_patient = keras_decode_patient.predict_on_batch([
         tree_for_unshift
     ])
@@ -272,6 +282,7 @@ def encode_passive_voice_sentence(roles, fillers, fillers_order):
 
 if __name__ == '__main__':
     print('Hello, Active-Passive Net')
+    tf.compat.v1.disable_eager_execution()
 
     # Input information
     fillers = np.array([
@@ -350,6 +361,7 @@ if __name__ == '__main__':
                                                           stop_level=0)
 
     tree_for_unshift = flattenize_per_tensor_representation(t_passive_voice)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_child = keras_full_unshifter.predict_on_batch([
         tree_for_unshift
     ])
@@ -357,6 +369,7 @@ if __name__ == '__main__':
     print(extracted_child)
 
     tree_for_unshift = flattenize_per_tensor_representation(t_active_voice)
+    tree_for_unshift = tree_for_unshift.reshape((1, *tree_for_unshift.shape, 1))
     extracted_child = keras_full_unshifter.predict_on_batch([
         tree_for_unshift
     ])

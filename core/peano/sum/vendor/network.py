@@ -41,7 +41,7 @@ def sum_block(incrementing_input, decrementing_input,
         block_id=block_id + 4
     )
 
-    decremented_output = Concatenate(axis=0)([decremented_input, constant_for_decrementing_input])
+    decremented_output = Concatenate(axis=1)([decremented_input, constant_for_decrementing_input])
 
     return (
                *increment_const_inputs,
@@ -55,8 +55,8 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
 
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_decrementing_input = Input(shape=(*shape,), batch_shape=(*shape,), name='left_operand')
-    flattened_incrementing_input = Input(shape=(*shape,), batch_shape=(*shape,), name='right_operand')
+    flattened_decrementing_input = Input(shape=(*shape,), batch_size=1, name='left_operand')
+    flattened_incrementing_input = Input(shape=(*shape,), batch_size=1, name='right_operand')
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,

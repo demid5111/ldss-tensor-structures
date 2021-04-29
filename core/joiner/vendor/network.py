@@ -9,6 +9,7 @@ from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
 from keras.models import Model
 
 from core.decoder.vendor.network import mat_transpose
+from core.utils import keras_constant_layer
 
 
 def mat_mul(tensors):
@@ -18,7 +19,7 @@ def mat_mul(tensors):
 def filler_input_subgraph(fillers_shapes, shift_layer):
     subtree_as_inputs = []
     for shape in fillers_shapes:
-        i = Input(shape=(*shape[1:],), batch_shape=(*shape,))
+        i = Input(shape=(*shape[1:],))
         subtree_as_inputs.append(i)
     reshape_zero_level = Reshape((1, 1, *fillers_shapes[0]))(subtree_as_inputs[0])
     reshape_first_level = Reshape((1, *fillers_shapes[1]))(subtree_as_inputs[1])
@@ -38,8 +39,10 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
 
 def constant_input(role, filler_len, max_depth, name, matrix_creator):
     np_constant = matrix_creator(role, filler_len, max_depth, name)
-    tf_constant = K.constant(np_constant)
-    return Input(tensor=tf_constant, batch_shape=np_constant.shape, shape=np_constant.shape, dtype='int32', name=name)
+    return keras_constant_layer(np_constant, name=name)
+    # np_constant = np_constant.reshape((1, *np_constant.shape))
+    # tf_constant = K.constant(np_constant, dtype='float32')
+    # return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
 
 
 def shift_matrix(role, filler_size, max_depth, name, mode='dense'):

@@ -8,6 +8,7 @@ from keras.layers import Lambda, Add, Multiply
 from core.active_passive_net.active_extractor.vendor.network import extract_semantic_tree_from_active_voice_branch
 from core.active_passive_net.classifier.vendor.network import build_classification_branch
 from core.active_passive_net.passive_extractor.vendor.network import extract_semantic_tree_from_passive_voice_branch
+from core.utils import keras_constant_layer
 
 
 def build_active_passive_network(roles, dual_roles, fillers, tree_shape):
@@ -30,9 +31,7 @@ def build_active_passive_network(roles, dual_roles, fillers, tree_shape):
         max_depth=max_depth)
 
     np_constant = np.array([-1])
-    tf_constant = K.constant(np_constant)
-    const_neg_1 = Input(tensor=tf_constant, shape=np_constant.shape, dtype='int32',
-                                name='active_voice_neg_1')
+    const_neg_1 = keras_constant_layer(np_constant, name='active_voice_neg_1')
     sum_is_passive_const_neg_1 = Add()([classification_output, const_neg_1])
     is_active = Multiply()([sum_is_passive_const_neg_1, const_neg_1])
     active_branch_input = Lambda(lambda tensors: tensors[0] * tensors[1])([apnet_variable_input, is_active])

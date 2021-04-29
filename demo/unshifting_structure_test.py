@@ -1,5 +1,6 @@
 import unittest
 import numpy as np
+import tensorflow as tf
 
 from core.joiner.vendor.network import build_tree_joiner_network
 from core.unshifter.vendor.network import build_tree_unshifter_network
@@ -10,6 +11,9 @@ from demo.unshifting_structure import generate_shapes_for_unshift, reshape_to_sa
 
 
 class UnshiftingIntegrationTest(unittest.TestCase):
+    def setUp(self) -> None:
+        tf.compat.v1.disable_eager_execution()
+
     def test_ideal1(self):
         """
         First use case for the structure that has nesting equal 1
@@ -76,6 +80,7 @@ class UnshiftingIntegrationTest(unittest.TestCase):
             *prepared_for_unshift
         ])
 
+        extracted_child = extracted_child.reshape((*extracted_child.shape[1:], ))
         t_active_voice_right_child_after_unshift = extract_per_level_tensor_representation_after_unshift(
             extracted_child,
             max_tree_depth=MAX_TREE_DEPTH - 1,
@@ -154,6 +159,7 @@ class UnshiftingIntegrationTest(unittest.TestCase):
             *prepared_for_unshift
         ])
 
+        extracted_child = extracted_child.reshape((*extracted_child.shape[1:],))
         t_active_voice_left_child_after_unshift = extract_per_level_tensor_representation_after_unshift(
             extracted_child,
             max_tree_depth=MAX_TREE_DEPTH - 1,

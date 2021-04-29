@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from core.joiner.utils import generate_shapes, generate_input_placeholder, \
     extract_per_level_tensor_representation_after_shift, reshape_to_satisfy_max_depth_after_shift
@@ -10,6 +11,7 @@ def sum_tensors(left, right):
 
 
 def main():
+    tf.compat.v1.disable_eager_execution()
     """
         First use case for the structure that should be shifted left
 
@@ -49,6 +51,7 @@ def main():
         *left_subtree_placeholder,
         *right_subtree_placeholder
     ])
+    fillers_joined = fillers_joined.reshape((*fillers_joined.shape[1:],))
     print('calculated cons (A _x_ r_0)')
 
     """
@@ -84,6 +87,7 @@ def main():
     ])
     print('calculated cons (A _x_ r_0 _x_ r_0)')
 
+    fillers_joined_second_case = fillers_joined_second_case.reshape((*fillers_joined_second_case.shape[1:],))
     tensor_repr_A_x_r_0_x_r_0 = extract_per_level_tensor_representation_after_shift(fillers_joined_second_case,
                                                                                     max_tree_depth=MAX_TREE_DEPTH,
                                                                                     role_shape=SINGLE_ROLE_SHAPE,
@@ -105,7 +109,6 @@ def main():
     |   B (right-child-of-root)
     A (left-child-of-left-child-of-root)    
     """
-
     prepared_for_shift_A_x_r_0 = reshape_to_satisfy_max_depth_after_shift(tensor_repr_A_x_r_0,
                                                                           MAX_TREE_DEPTH,
                                                                           SINGLE_ROLE_SHAPE,
@@ -118,7 +121,7 @@ def main():
         *prepared_for_shift_A_x_r_0,
         *right_subtree_placeholder
     ])
-
+    fillers_joined_third_case = fillers_joined_third_case.reshape((*fillers_joined_third_case.shape[1:],))
     tensor_repr_A_x_r_0_x_r_0_B_x_r_1 = extract_per_level_tensor_representation_after_shift(fillers_joined_third_case,
                                                                                             max_tree_depth=MAX_TREE_DEPTH,
                                                                                             role_shape=SINGLE_ROLE_SHAPE,
@@ -151,6 +154,8 @@ def main():
         *right_subtree_placeholder
     ])
 
+    fillers_joined_fourth_case_simple_c = fillers_joined_fourth_case_simple_c.reshape(
+        (*fillers_joined_fourth_case_simple_c.shape[1:],))
     tensor_repr_C_x_r_1 = extract_per_level_tensor_representation_after_shift(fillers_joined_fourth_case_simple_c,
                                                                               max_tree_depth=MAX_TREE_DEPTH,
                                                                               role_shape=SINGLE_ROLE_SHAPE,
@@ -168,6 +173,8 @@ def main():
         *right_subtree_placeholder,
     ])
 
+    fillers_joined_fourth_case_complex_c = fillers_joined_fourth_case_complex_c.reshape(
+        (*fillers_joined_fourth_case_complex_c.shape[1:],))
     tensor_repr_C_x_r_1_x_r_0 = extract_per_level_tensor_representation_after_shift(
         fillers_joined_fourth_case_complex_c,
         max_tree_depth=MAX_TREE_DEPTH,
@@ -178,7 +185,7 @@ def main():
     print('calculated tree representation')
 
     prepared_for_shift_tree_representation = reshape_to_satisfy_max_depth_after_shift(tree_representation,
-                                                                                      MAX_TREE_DEPTH+1,
+                                                                                      MAX_TREE_DEPTH + 1,
                                                                                       SINGLE_ROLE_SHAPE,
                                                                                       SINGLE_FILLER_SHAPE)
     return prepared_for_shift_tree_representation

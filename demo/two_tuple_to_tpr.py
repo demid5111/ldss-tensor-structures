@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from core.active_passive_net.utils import elementary_join
 from core.joiner.utils import generate_shapes
@@ -147,9 +148,9 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
                                                        max_depth=MAX_TREE_DEPTH)
 
     flattened_model_2_tuple_tpr = flattenize_per_tensor_representation(mta_result_encoded)
-
+    flattened_model_2_tuple_tpr = flattened_model_2_tuple_tpr.reshape((1, *flattened_model_2_tuple_tpr.shape, 1))
     filler_index, filler_alpha, filler_weight = keras_decoder.predict_on_batch([
-        *flattened_model_2_tuple_tpr
+        flattened_model_2_tuple_tpr
     ])
 
     term_index, alpha, weight = FillerFactory.decode_tpr(filler_index, filler_alpha, filler_weight)
@@ -175,6 +176,7 @@ def aggregate_and_check(model_2_tuple_a, model_2_tuple_b):
 
 def main():
     print('Converting 2-tuple to TPR')
+    tf.compat.v1.disable_eager_execution()
     linguistic_scale_size = 5
     first_tuple = Model2Tuple(term_index=3, alpha=0, linguistic_scale_size=linguistic_scale_size)
     second_tuple = Model2Tuple(term_index=2, alpha=0, linguistic_scale_size=linguistic_scale_size)

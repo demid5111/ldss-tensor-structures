@@ -1,4 +1,5 @@
 import numpy as np
+import tensorflow as tf
 
 from demo.recursive_structure import pre_process_roles
 from demo.shifting_structure import main as shifting_main, generate_shapes
@@ -55,6 +56,8 @@ def generate_shapes_for_unshift(max_tree_depth, role_shape, filler_shape):
 
 
 if __name__ == '__main__':
+    tf.compat.v1.disable_eager_execution()
+
     fillers_case_1 = np.array([
         [8, 0, 0],  # A
         [0, 15, 0],  # B
@@ -99,6 +102,7 @@ if __name__ == '__main__':
 
     print('calculated ex0()')
 
+    extracted_left_child = extracted_left_child.reshape((*extracted_left_child.shape[1:],))
     left_child_tensor_representation = extract_per_level_tensor_representation_after_unshift(extracted_left_child,
                                                                                              max_tree_depth=MAX_TREE_DEPTH,
                                                                                              role_shape=SINGLE_ROLE_SHAPE,

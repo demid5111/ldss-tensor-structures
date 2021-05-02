@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.model_2_tuple.core import Model2Tuple
+from .core import Model2Tuple
 
 
 class FillerFactory:

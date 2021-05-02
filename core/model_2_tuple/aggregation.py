@@ -1,9 +1,9 @@
 from functools import reduce
 from typing import List
 
-from core.model_2_tuple.core import Model2Tuple
-from core.model_2_tuple.decode import decode_model_2_tuple_tpr
-from core.model_2_tuple.encode import encode_model_2_tuple
+from .core import Model2Tuple
+from .decode import decode_model_2_tuple_tpr
+from .encode import encode_model_2_tuple
 
 
 def aggregate_model_tuples(tuples: List[Model2Tuple], linguistic_scale_size):

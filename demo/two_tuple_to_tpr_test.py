@@ -1,8 +1,8 @@
 import unittest
 import tensorflow as tf
 
-from core.model_2_tuple.aggregation import aggregate_and_check
-from core.model_2_tuple.core import Model2Tuple
+from core.model_2_tuple import aggregate_and_check
+from core.model_2_tuple import Model2Tuple
 
 
 class Model2TupleToTPRTest(unittest.TestCase):

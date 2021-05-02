@@ -1,8 +1,8 @@
 import numpy as np
 
-from core.model_2_tuple.core import Model2Tuple
-from core.model_2_tuple.decoder.vendor.network import build_decode_model_2_tuple_network
-from core.model_2_tuple.filler_factory import FillerFactory
+from .core import Model2Tuple
+from .decoder.vendor.network import build_decode_model_2_tuple_network
+from .filler_factory import FillerFactory
 from core.utils import flattenize_per_tensor_representation
 
 

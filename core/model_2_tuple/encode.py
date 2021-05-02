@@ -3,8 +3,8 @@ import numpy as np
 from core.active_passive_net.utils import elementary_join
 from core.joiner.utils import generate_shapes
 from core.joiner.vendor.network import build_tree_joiner_network
-from core.model_2_tuple.core import Model2Tuple
-from core.model_2_tuple.filler_factory import FillerFactory
+from .core import Model2Tuple
+from .filler_factory import FillerFactory
 
 
 def encode_model_2_tuple(model_2_tuple: Model2Tuple) -> np.array:

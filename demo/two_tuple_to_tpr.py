@@ -54,7 +54,7 @@ class FillerFactory:
         term_index = int(index_vector[value_position])
 
         alpha_position = np.where(alpha_vector != 0)
-        if alpha_position[0]:
+        if alpha_position:
             alpha_position = alpha_position[0][0]
             alpha = float(alpha_vector[alpha_position]) / (FillerFactory.alpha_precision * 10)
         else:
@@ -147,7 +147,10 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
     keras_decoder = build_decode_model_2_tuple_network(filler_len=filler_len, dual_roles=dual_roles,
                                                        max_depth=MAX_TREE_DEPTH)
 
-    flattened_model_2_tuple_tpr = flattenize_per_tensor_representation(mta_result_encoded)
+    if not hasattr(mta_result_encoded, 'shape') or len(mta_result_encoded.shape) > 1:
+        flattened_model_2_tuple_tpr = flattenize_per_tensor_representation(mta_result_encoded)
+    else:
+        flattened_model_2_tuple_tpr = mta_result_encoded
     flattened_model_2_tuple_tpr = flattened_model_2_tuple_tpr.reshape((1, *flattened_model_2_tuple_tpr.shape, 1))
     filler_index, filler_alpha, filler_weight = keras_decoder.predict_on_batch([
         flattened_model_2_tuple_tpr
@@ -178,8 +181,8 @@ def main():
     print('Converting 2-tuple to TPR')
     tf.compat.v1.disable_eager_execution()
     linguistic_scale_size = 5
-    first_tuple = Model2Tuple(term_index=3, alpha=0, linguistic_scale_size=linguistic_scale_size)
-    second_tuple = Model2Tuple(term_index=2, alpha=0, linguistic_scale_size=linguistic_scale_size)
+    first_tuple = Model2Tuple(term_index=4, alpha=0.2, linguistic_scale_size=linguistic_scale_size)
+    second_tuple = Model2Tuple(term_index=3, alpha=-0.1, linguistic_scale_size=linguistic_scale_size)
 
     aggregate_and_check(first_tuple, second_tuple)
     print('Converting 2-tuple to TPR and back works with no information loss!')

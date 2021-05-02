@@ -31,4 +31,4 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array, decoder=None):
 
     term_index, alpha, weight = FillerFactory.decode_tpr(filler_index, filler_alpha, filler_weight)
 
-    return Model2Tuple(term_index=term_index, alpha=alpha, weight=weight)
+    return Model2Tuple(term_index=term_index, alpha=alpha, weight=weight), decoder

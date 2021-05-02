@@ -37,4 +37,4 @@ def encode_model_2_tuple(model_2_tuple: Model2Tuple, encoder=None) -> np.array:
                                                 filler_alpha,
                                                 filler_weight
                                             ))
-    return model_2_tuple_encoded
+    return model_2_tuple_encoded, encoder

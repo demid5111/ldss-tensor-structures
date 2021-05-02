@@ -7,7 +7,7 @@ from .core import Model2Tuple
 from .filler_factory import FillerFactory
 
 
-def encode_model_2_tuple(model_2_tuple: Model2Tuple) -> np.array:
+def encode_model_2_tuple(model_2_tuple: Model2Tuple, encoder=None) -> np.array:
     roles = np.array([
         [1, 0, 0],  # r_i
         [0, 1, 0],  # r_alpha
@@ -24,10 +24,11 @@ def encode_model_2_tuple(model_2_tuple: Model2Tuple) -> np.array:
                                      role_shape=SINGLE_ROLE_SHAPE,
                                      filler_shape=SINGLE_FILLER_SHAPE)
 
-    keras_joiner = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
+    if encoder is None:
+        encoder = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
     fillers = np.array([filler_index, filler_alpha, filler_weight])
-    model_2_tuple_encoded = elementary_join(joiner_network=keras_joiner,
+    model_2_tuple_encoded = elementary_join(joiner_network=encoder,
                                             input_structure_max_shape=fillers_shapes,
                                             basic_roles=roles,
                                             basic_fillers=fillers,

@@ -6,7 +6,7 @@ from .filler_factory import FillerFactory
 from core.utils import flattenize_per_tensor_representation
 
 
-def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
+def decode_model_2_tuple_tpr(mta_result_encoded: np.array, decoder=None):
     roles = np.array([
         [1, 0, 0],  # r_i
         [0, 1, 0],  # r_alpha
@@ -16,7 +16,8 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
     filler_len = FillerFactory.get_filler_size()
     MAX_TREE_DEPTH = 2
 
-    keras_decoder = build_decode_model_2_tuple_network(filler_len=filler_len, dual_roles=dual_roles,
+    if decoder is None:
+        decoder = build_decode_model_2_tuple_network(filler_len=filler_len, dual_roles=dual_roles,
                                                        max_depth=MAX_TREE_DEPTH)
 
     if not hasattr(mta_result_encoded, 'shape') or len(mta_result_encoded.shape) > 1:
@@ -24,7 +25,7 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array):
     else:
         flattened_model_2_tuple_tpr = mta_result_encoded
     flattened_model_2_tuple_tpr = flattened_model_2_tuple_tpr.reshape((1, *flattened_model_2_tuple_tpr.shape, 1))
-    filler_index, filler_alpha, filler_weight = keras_decoder.predict_on_batch([
+    filler_index, filler_alpha, filler_weight = decoder.predict_on_batch([
         flattened_model_2_tuple_tpr
     ])
 

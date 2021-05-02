@@ -44,20 +44,24 @@ class FillerFactory:
         alpha_vector = FillerFactory._extract_filler_from_full_filler(tpr_alpha, 'alpha')
         weight_vector = FillerFactory._extract_filler_from_full_filler(tpr_weight, 'weight')
 
-        value_position = np.where(index_vector > 0)[0][0]
-        term_index = int(index_vector[value_position])
+        value_position = np.where(index_vector > 0)
+        if len(value_position[0]) > 0:
+            value_position = value_position[0][0]
+            term_index = int(index_vector[value_position])
+        else:
+            term_index = 0
 
         alpha_position = np.where(alpha_vector != 0)
-        if alpha_position:
+        if len(alpha_position[0]) > 0:
             alpha_position = alpha_position[0][0]
             alpha = float(alpha_vector[alpha_position]) / (FillerFactory.alpha_precision * 10)
         else:
             alpha = .0
 
-        value_position = np.where(weight_vector != 0)
-        if value_position:
-            value_position = value_position[0][0]
-            weight = float(weight_vector[value_position]) / (FillerFactory.weight_precision * 10)
+        weight_position = np.where(weight_vector != 0)
+        if len(weight_position[0]) > 0:
+            weight_position = weight_position[0][0]
+            weight = float(weight_vector[weight_position]) / (FillerFactory.weight_precision * 10)
         else:
             weight = .0
 

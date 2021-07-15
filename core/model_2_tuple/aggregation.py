@@ -17,8 +17,8 @@ def aggregate_and_check(model_2_tuple_a, model_2_tuple_b):
 
     mta_result = aggregate_model_tuples([model_2_tuple_a, model_2_tuple_b], model_2_tuple_a.linguistic_scale_size)
 
-    mta_result_encoded = encode_model_2_tuple(mta_result)
-    decoded_2_tuple = decode_model_2_tuple_tpr(mta_result_encoded)
+    mta_result_encoded, _ = encode_model_2_tuple(mta_result)
+    decoded_2_tuple, _ = decode_model_2_tuple_tpr(mta_result_encoded)
 
     if mta_result != decoded_2_tuple:
         raise ValueError('Encoding is working with information loss!')

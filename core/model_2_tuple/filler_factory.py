@@ -47,21 +47,21 @@ class FillerFactory:
         value_position = np.where(index_vector > 0)
         if len(value_position[0]) > 0:
             value_position = value_position[0][0]
-            term_index = int(index_vector[value_position])
+            term_index = value_position
         else:
             term_index = 0
 
         alpha_position = np.where(alpha_vector != 0)
         if len(alpha_position[0]) > 0:
             alpha_position = alpha_position[0][0]
-            alpha = float(alpha_vector[alpha_position]) / (FillerFactory.alpha_precision * 10)
+            alpha = float(alpha_position - 5) / (FillerFactory.alpha_precision * 10)
         else:
             alpha = .0
 
         weight_position = np.where(weight_vector != 0)
         if len(weight_position[0]) > 0:
             weight_position = weight_position[0][0]
-            weight = float(weight_vector[weight_position]) / (FillerFactory.weight_precision * 10)
+            weight = float(weight_position) / (FillerFactory.weight_precision * 10)
         else:
             weight = .0
 
@@ -82,19 +82,19 @@ class FillerFactory:
     def _to_tpr_fillers(model_2_tuple: Model2Tuple):
         """returns f_i filler"""
         index = [0 for _ in range(model_2_tuple.linguistic_scale_size)]
-        index[model_2_tuple.term_index] = model_2_tuple.term_index
+        index[model_2_tuple.term_index] = 1
 
         # alpha is in [-0.5, 0.5]
         # [-5 -4 -3 -2 -1 0 1 2 3 4 5]
         alpha = [0 for _ in range(11)]
         rounded_value = round(model_2_tuple.alpha * FillerFactory.alpha_precision * 10)
         rounded_value_index = rounded_value + 5
-        alpha[rounded_value_index] = rounded_value
+        alpha[rounded_value_index] = 1
 
-        # alpha is in [-0.5, 0.5]
+        # weight is in [0, 0.9]
         # [0 1 2 3 4 5 6 7 8 9]
         weight = [0 for _ in range(10)]
         rounded_value = round(model_2_tuple.weight * FillerFactory.weight_precision * 10)
-        weight[rounded_value] = rounded_value
+        weight[rounded_value] = 1
 
         return index, alpha, weight

@@ -4,7 +4,7 @@ class Model2Tuple:
     alpha: float
     weight: float
 
-    def __init__(self, term_index: int, alpha: float, linguistic_scale_size: int = 5, weight: float = 0.5):
+    def __init__(self, term_index: int, alpha: float, linguistic_scale_size: int = 5, weight: float = None):
         self.term_index = term_index
         self.alpha = alpha
         self.linguistic_scale_size = linguistic_scale_size
@@ -18,11 +18,11 @@ class Model2Tuple:
         return (self.alpha + self.term_index) / tau
 
     @staticmethod
-    def from_number(beta: float, linguistic_scale_size: int):
+    def from_number(beta: float, linguistic_scale_size: int, weight=None):
         tau = linguistic_scale_size - 1
         i = round(beta * tau)
         alpha = beta * tau - i
-        return Model2Tuple(term_index=i, alpha=alpha, linguistic_scale_size=linguistic_scale_size)
+        return Model2Tuple(term_index=i, alpha=alpha, linguistic_scale_size=linguistic_scale_size, weight=weight)
 
     def __eq__(self, other):
         return (

@@ -8,11 +8,19 @@ from .filler_factory import FillerFactory
 
 
 def encode_model_2_tuple(model_2_tuple: Model2Tuple, encoder=None) -> np.array:
-    roles = np.array([
-        [1, 0, 0],  # r_i
-        [0, 1, 0],  # r_alpha
-        [0, 0, 1],  # r_w
-    ])
+    has_weigths = model_2_tuple.weight is not None
+
+    if has_weigths:
+        roles = np.array([
+            [1, 0, 0],  # r_i
+            [0, 1, 0],  # r_alpha
+            [0, 0, 1],  # r_w
+        ])
+    else:
+        roles = np.array([
+            [1, 0],  # r_i
+            [0, 1],  # r_alpha
+        ])
 
     filler_index, filler_alpha, filler_weight = FillerFactory.from_model_2_tuple(model_2_tuple)
 
@@ -27,14 +35,16 @@ def encode_model_2_tuple(model_2_tuple: Model2Tuple, encoder=None) -> np.array:
     if encoder is None:
         encoder = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 
-    fillers = np.array([filler_index, filler_alpha, filler_weight])
+    if has_weigths:
+        fillers = np.array([filler_index, filler_alpha, filler_weight])
+        subtrees = (filler_index, filler_alpha, filler_weight)
+    else:
+        fillers = np.array([filler_index, filler_alpha])
+        subtrees = (filler_index, filler_alpha)
+
     model_2_tuple_encoded = elementary_join(joiner_network=encoder,
                                             input_structure_max_shape=fillers_shapes,
                                             basic_roles=roles,
                                             basic_fillers=fillers,
-                                            subtrees=(
-                                                filler_index,
-                                                filler_alpha,
-                                                filler_weight
-                                            ))
+                                            subtrees=subtrees)
     return model_2_tuple_encoded, encoder

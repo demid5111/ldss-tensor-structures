@@ -15,7 +15,7 @@ class FillerFactory:
         encoding_ranges = {
             'index': [0, len(index)],
             'alpha': [len(index), len(index) + len(alpha)],
-            'weight':  None
+            'weight': None
         }
 
         if weight is not None:
@@ -49,14 +49,23 @@ class FillerFactory:
         index_vector = FillerFactory._extract_filler_from_full_filler(tpr_index, 'index', has_weights=has_weights)
         alpha_vector = FillerFactory._extract_filler_from_full_filler(tpr_alpha, 'alpha', has_weights=has_weights)
 
-        value_position = np.where(index_vector > 0)
+        weight_vector = None
+        if tpr_weight is not None:
+            weight_vector = FillerFactory._extract_filler_from_full_filler(tpr_weight, 'weight',
+                                                                           has_weights=has_weights)
+        term_index, alpha, weight = FillerFactory.decode_fillers(index_vector, alpha_vector, weight_vector)
+        return term_index, alpha, weight
+
+    @staticmethod
+    def decode_fillers(filler_term, filler_alpha, filler_weight=None):
+        value_position = np.where(filler_term > 0.9)
         if len(value_position[0]) > 0:
             value_position = value_position[0][0]
             term_index = value_position
         else:
             term_index = 0
 
-        alpha_position = np.where(alpha_vector != 0)
+        alpha_position = np.where(filler_alpha > 0.9)
         if len(alpha_position[0]) > 0:
             alpha_position = alpha_position[0][0]
             alpha = float(alpha_position - 5) / (FillerFactory.alpha_precision * 10)
@@ -64,16 +73,14 @@ class FillerFactory:
             alpha = .0
 
         weight = None
-        if tpr_weight is not None:
-            weight_vector = FillerFactory._extract_filler_from_full_filler(tpr_weight, 'weight', has_weights=has_weights)
-            weight_position = np.where(weight_vector != 0)
+        if filler_weight is not None:
+            weight_position = np.where(filler_weight > 0.9)
 
             if len(weight_position[0]) > 0:
                 weight_position = weight_position[0][0]
                 weight = float(weight_position) / (FillerFactory.weight_precision * 10)
             else:
                 weight = .0
-
         return term_index, alpha, weight
 
     @staticmethod

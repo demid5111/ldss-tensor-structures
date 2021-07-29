@@ -16,7 +16,7 @@
    python3 -m virtualenv -p `which python3` venv
    ```
 
-2. Activate environment:
+2. Activate virtual environment:
 
    ```bash
    source venv/bin/activate

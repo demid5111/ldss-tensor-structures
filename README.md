@@ -1,4 +1,4 @@
-[![Build](https://travis-ci.org/demid5111/ldss-tensor-structures.svg?branch=master)](https://travis-ci.org/demid5111/ldss-tensor-structures)
+[![Build Status](https://app.travis-ci.com/demid5111/ldss-tensor-structures.svg?branch=master)](https://app.travis-ci.com/demid5111/ldss-tensor-structures)
 [![Coverage](https://coveralls.io/repos/github/demid5111/ldss-tensor-structures/badge.svg)](https://coveralls.io/github/demid5111/ldss-tensor-structures)
 
 ## Prerequisites

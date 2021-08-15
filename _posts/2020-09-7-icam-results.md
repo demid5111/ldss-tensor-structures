@@ -11,4 +11,4 @@ The talk can be found online:
 
 The Diploma of the Third Degree:
 
-![ICAM Diploma](/ldss-tensor-structures/img/icam_diploma.pdf "ICAM Diploma")
+![ICAM Diploma](/ldss-tensor-structures/img/icam_diploma_2020.jpg "ICAM Diploma")

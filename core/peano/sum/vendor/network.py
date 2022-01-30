@@ -1,5 +1,4 @@
-from keras import Input, Model
-from keras.layers import Concatenate
+import tensorflow as tf
 
 from core.active_passive_net.active_extractor.vendor.network import custom_constant_layer
 from core.peano.increment.vendor.network import constant_inputs_for_increment_block, increment_block, condition_branch, \
@@ -41,7 +40,7 @@ def sum_block(incrementing_input, decrementing_input,
         block_id=block_id + 4
     )
 
-    decremented_output = Concatenate(axis=1)([decremented_input, constant_for_decrementing_input])
+    decremented_output = tf.keras.layers.Concatenate(axis=1)([decremented_input, constant_for_decrementing_input])
 
     return (
                *increment_const_inputs,
@@ -55,8 +54,8 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
 
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_decrementing_input = Input(shape=(*shape,), batch_size=1, name='left_operand')
-    flattened_incrementing_input = Input(shape=(*shape,), batch_size=1, name='right_operand')
+    flattened_decrementing_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1, name='left_operand')
+    flattened_incrementing_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1, name='right_operand')
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,
@@ -87,7 +86,7 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
             constant_for_decrementing_input=tmp_reshaped_fake)
         all_sum_const_inputs.extend(sum_const_inputs)
 
-    return Model(
+    return tf.keras.Model(
         inputs=[
             left_shift_input,
             right_shift_input,

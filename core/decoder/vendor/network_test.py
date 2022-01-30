@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-import keras.backend as K
 
 from core.decoder.vendor.network import build_filler_decoder_network
 

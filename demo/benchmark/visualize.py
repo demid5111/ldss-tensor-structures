@@ -19,7 +19,7 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
     
     sample_ticks = scipy_data['depth'].tolist()
     if comparison_criteria == 'memory':
-        y_title = 'Memory used, Mb'
+        y_title = 'Использованная память, Мбайт'
         chart_title = 'peak memory usage'
 
         filtered_data_df = pd.DataFrame({
@@ -29,7 +29,8 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
             'scipy': scipy_data[f'{task}_FINISH'] - scipy_data[f'{task}_START'],
         })
     else:  # it is time
-        y_title = 'Wall time, seconds'
+        y_title = 'Время выполнения, сек.'
+        chart_title = 'time elapsed'
         chart_title = 'time elapsed'
 
         filtered_data_df = pd.DataFrame({
@@ -47,10 +48,13 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
              linestyle='dotted', linewidth=2, label='SciPy')
     plt.yscale('log')
     plt.ylabel(y_title, **font_settings)
-    plt.xlabel('Depth of structure', **font_settings)
+    plt.xlabel('Глубина структуры', **font_settings)
     plt.xticks(sample_ticks, **font_settings)
     plt.yticks(**font_settings)
-    plt.title(f'{task.title()} task, {chart_title}')
+
+    task_title = f'{task.title()} task'
+    task_title = 'Задача кодирования структуры' if task == 'encode' else 'Задача декодирования структуры'
+    plt.title(task_title)
     plt.legend()
     return plt
 

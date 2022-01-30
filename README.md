@@ -50,21 +50,31 @@
 
 1. Without a coverage:
 ```
-python3 -m unittest discover -p "*_test.py"
+pytest
 ```
 
 2. With coverage:
     * Run tests:
     ```
-    coverage run --source=math_utils.py -m unittest discover -p "*_test.py"
+    pytest --cov-report html --cov core
     ```
     * Visualize coverage:
-        - console:
-        ```
-        coverage report -m
-        ```
         - html:
         ```
-        coverage html
-        open html_cov/index.html
+        open htmlcov/index.html
         ```
+## Running lines of code calculation
+
+1. Run:
+   ```bash
+   pygount --format=summary ./core/
+   ```
+   
+## Running PEP8 style check
+
+1. Run:
+   ```bash
+   pylint ./core/
+   ```
+
+

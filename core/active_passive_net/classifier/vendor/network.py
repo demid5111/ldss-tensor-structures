@@ -29,9 +29,11 @@ def build_universal_extraction_branch(model_input, roles, filler_len, max_depth,
         target_num_elements = flattened_num_elements
 
         # TODO: resolve custom reshape issue
-        reshape_for_crop = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, current_num_elements, 1)))(current_input)
+        reshape_for_crop = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, current_num_elements, 1)))(
+            current_input)
         clip_first_level = tf.keras.layers.Cropping1D(cropping=(filler_len, 0))(reshape_for_crop)
-        current_input = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (target_num_elements, 1)))(clip_first_level)
+        current_input = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (target_num_elements, 1)))(
+            clip_first_level)
 
         current_input = tf.keras.layers.Lambda(mat_mul)([
             left_shift_input,
@@ -55,24 +57,26 @@ def build_classification_branch(roles, fillers, tree_shape, role_extraction_orde
                                                                                 max_depth=max_depth,
                                                                                 stop_level=stop_level,
                                                                                 role_extraction_order=role_extraction_order)
-    reshape_for_pool = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len, 1)))(extraction_output)
+    reshape_for_pool = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len, 1)))(
+        extraction_output)
     global_max_pool = tf.keras.layers.GlobalMaxPooling1D()(reshape_for_pool)
     normalizer = tf.keras.layers.Lambda(normalization)(global_max_pool)
     return extraction_inputs, flattened_tree_input, normalizer, extraction_output
 
 
 def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
-    const_inputs, variable_input, output,_ = build_classification_branch(roles=roles,
-                                                                       fillers=fillers,
-                                                                       tree_shape=tree_shape,
-                                                                       role_extraction_order=role_extraction_order,
-                                                                       stop_level=stop_level)
+    const_inputs, variable_input, output, _ = build_classification_branch(roles=roles,
+                                                                          fillers=fillers,
+                                                                          tree_shape=tree_shape,
+                                                                          role_extraction_order=role_extraction_order,
+                                                                          stop_level=stop_level)
     return tf.keras.Model(
         inputs=[
             *const_inputs,
             variable_input,
         ],
         outputs=output)
+
 
 # TODO: rename to correspond to classification
 def build_real_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):

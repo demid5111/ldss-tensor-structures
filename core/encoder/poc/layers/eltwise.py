@@ -7,6 +7,7 @@ class Eltwise(ILayer):
     """
     Takes x inputs of equal size and performs operation over corresponding items
     """
+
     def __init__(self, t):
         super().__init__()
         self.type = t

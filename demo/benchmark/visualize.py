@@ -16,7 +16,7 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
         'fontname': 'Times New Roman',
         'fontsize': 12
     }
-    
+
     sample_ticks = scipy_data['depth'].tolist()
     if comparison_criteria == 'memory':
         y_title = 'Использованная память, Мбайт'
@@ -70,9 +70,9 @@ def main():
     numpy_df = pd.read_csv('./data/test_numpy.csv', dtype={'depth': 'int16'})
     scipy_df = pd.read_csv('./data/test_scipy.csv', dtype={'depth': 'int16'})
 
-    plot = create_chart(task='decode', 
-                        comparison_criteria='memory', 
-                        nn_data=nn_df, 
+    plot = create_chart(task='decode',
+                        comparison_criteria='memory',
+                        nn_data=nn_df,
                         numpy_data=numpy_df,
                         scipy_data=scipy_df)
     save_chart(plot, task='decode', comparison_criteria='memory')

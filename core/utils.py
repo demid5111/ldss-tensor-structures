@@ -1,6 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
+
 def flattenize_per_tensor_representation(blobs):
     length = sum(map(lambda b: b.size, blobs))
     flattened_res = np.zeros((length,))

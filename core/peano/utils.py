@@ -21,7 +21,6 @@ def number_to_tree(target_number, max_tree_depth, fillers, roles, joiner_network
     if target_number == 0:
         return prepare_input(None, fillers_shapes)
 
-
     if not joiner_network:
         joiner_network = build_tree_joiner_network(roles=roles, fillers_shapes=fillers_shapes)
 

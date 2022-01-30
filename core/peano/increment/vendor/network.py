@@ -45,7 +45,8 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     )
 
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape
-    reshape_for_pool = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, target_elements, 1)))(one_tensor_output)
+    reshape_for_pool = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, target_elements, 1)))(
+        one_tensor_output)
     global_max_pool = tf.keras.layers.GlobalMaxPooling1D()(reshape_for_pool)
     return const_inputs, tf.keras.layers.Lambda(normalization)(global_max_pool), one_tensor_output
 
@@ -99,7 +100,8 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         left_shift_input=left_shift_input,
         right_shift_input=right_shift_input
     )
-    next_number_reshaped = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, *next_number.shape)))(next_number)
+    next_number_reshaped = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, *next_number.shape)))(
+        next_number)
     next_number_output = tf.keras.layers.Concatenate(axis=1)([constant_input_filler, next_number_reshaped])
     cropped_number_after_increment = make_output_same_length_as_input(layer_to_crop=next_number_output,
                                                                       role=roles[1],

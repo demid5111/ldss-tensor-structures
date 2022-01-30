@@ -2,11 +2,11 @@ import tensorflow as tf
 
 
 def mat_mul(tensors):
-    return [tf.keras.backend.dot(tensors[0][i],tensors[1][i]) for i in range(tensors[0].shape[0])]
+    return [tf.keras.backend.dot(tensors[0][i], tensors[1][i]) for i in range(tensors[0].shape[0])]
 
 
 def mat_transpose(matrix):
-    return tf.keras.backend.permute_dimensions(matrix, (1,0))
+    return tf.keras.backend.permute_dimensions(matrix, (1, 0))
 
 
 def prepare_shapes(mapping, dual_roles):

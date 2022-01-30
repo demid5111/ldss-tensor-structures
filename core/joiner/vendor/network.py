@@ -3,35 +3,32 @@ from functools import reduce
 import numpy as np
 import scipy.sparse
 
-from keras import backend as K
-from keras.engine import Input
-from keras.layers import Lambda, Flatten, Add, concatenate, Reshape
-from keras.models import Model
+import tensorflow as tf
 
 from core.decoder.vendor.network import mat_transpose
 from core.utils import keras_constant_layer
 
 
 def mat_mul(tensors):
-    return K.dot(tensors[0], tensors[1])
+    return tf.keras.backend.dot(tensors[0], tensors[1])
 
 
 def filler_input_subgraph(fillers_shapes, shift_layer):
     subtree_as_inputs = []
     for shape in fillers_shapes:
-        i = Input(shape=(*shape[1:],))
+        i = tf.keras.layers.Input(shape=(*shape[1:],))
         subtree_as_inputs.append(i)
-    reshape_zero_level = Reshape((1, 1, *fillers_shapes[0]))(subtree_as_inputs[0])
-    reshape_first_level = Reshape((1, *fillers_shapes[1]))(subtree_as_inputs[1])
+    reshape_zero_level = tf.keras.layers.Reshape((1, 1, *fillers_shapes[0]))(subtree_as_inputs[0])
+    reshape_first_level = tf.keras.layers.Reshape((1, *fillers_shapes[1]))(subtree_as_inputs[1])
     inputs_before_flattens = [
         reshape_zero_level,
         reshape_first_level,
         *subtree_as_inputs[2:]
     ]
-    flatten_layers = [Flatten()(input_layer) for input_layer in inputs_before_flattens]
-    concat_layer = concatenate(flatten_layers)
-    transpose_layer = Lambda(mat_transpose)(concat_layer)
-    return subtree_as_inputs, Lambda(mat_mul)([
+    flatten_layers = [tf.keras.layers.Flatten()(input_layer) for input_layer in inputs_before_flattens]
+    concat_layer = tf.keras.layers.concatenate(flatten_layers)
+    transpose_layer = tf.keras.layers.Lambda(mat_transpose)(concat_layer)
+    return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul)([
         shift_layer,
         transpose_layer
     ])
@@ -87,7 +84,7 @@ def build_join_branch(roles, fillers_shapes):
         variable_inputs.append(inputs)
         matmul_layers.append(matmul_layer)
 
-    sum_layer = Add()(matmul_layers)
+    sum_layer = tf.keras.layers.Add()(matmul_layers)
 
     return (
                tuple(constant_inputs),
@@ -115,7 +112,7 @@ def build_tree_joiner_network(roles, fillers_shapes):
     for inputs_list in variable_inputs:
         model_inputs.extend(inputs_list)
 
-    return Model(
+    return tf.keras.Model(
         inputs=model_inputs,
         outputs=output
     )

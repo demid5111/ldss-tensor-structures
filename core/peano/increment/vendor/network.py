@@ -1,7 +1,5 @@
-import keras.backend as K
 import numpy as np
-from keras import Model, Input
-from keras.layers import Concatenate, Lambda, GlobalMaxPooling1D, Add, Multiply
+import tensorflow as tf
 
 from core.active_passive_net.active_extractor.vendor.network import custom_cropping_layer, custom_constant_layer
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch, normalization
@@ -47,16 +45,16 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     )
 
     target_elements, _ = unshift_matrix(role, filler_len, max_depth - 1).shape
-    reshape_for_pool = Lambda(lambda x: K.reshape(x, (1, target_elements, 1)))(one_tensor_output)
-    global_max_pool = GlobalMaxPooling1D()(reshape_for_pool)
-    return const_inputs, Lambda(normalization)(global_max_pool), one_tensor_output
+    reshape_for_pool = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, target_elements, 1)))(one_tensor_output)
+    global_max_pool = tf.keras.layers.GlobalMaxPooling1D()(reshape_for_pool)
+    return const_inputs, tf.keras.layers.Lambda(normalization)(global_max_pool), one_tensor_output
 
 
 def check_if_zero_branch(flag_input, block_id):
     np_constant = np.array([-1])
     const_neg_1 = keras_constant_layer(np_constant, 'increment_neg_{}'.format(block_id))
-    sum_is_zero_const = Add()([flag_input, const_neg_1])
-    return const_neg_1, Multiply()([sum_is_zero_const, const_neg_1])
+    sum_is_zero_const = tf.keras.layers.Add()([flag_input, const_neg_1])
+    return const_neg_1, tf.keras.layers.Multiply()([sum_is_zero_const, const_neg_1])
 
 
 def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, dual_roles, filler_len, max_depth,
@@ -70,16 +68,16 @@ def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, 
         block_id=block_id + 1)
 
     const_zero_branch_input, is_zero = check_if_zero_branch(is_not_zero, block_id)
-    is_value_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([
+    is_value_zero_branch = tf.keras.layers.Lambda(lambda tensors: tensors[0] * tensors[1])([
         condition_if_zero,
         is_zero
     ])
 
-    is_value_not_zero_branch = Lambda(lambda tensors: tensors[0] * tensors[1])([
+    is_value_not_zero_branch = tf.keras.layers.Lambda(lambda tensors: tensors[0] * tensors[1])([
         condition_if_not_zero,
         is_not_zero
     ])
-    sum_branches = Add()([is_value_zero_branch, is_value_not_zero_branch])
+    sum_branches = tf.keras.layers.Add()([is_value_zero_branch, is_value_not_zero_branch])
     return (
                *const_not_zero_branch_inputs,
                const_zero_branch_input
@@ -101,8 +99,8 @@ def increment_block(incrementing_input, increment_value, roles, dual_roles, fill
         left_shift_input=left_shift_input,
         right_shift_input=right_shift_input
     )
-    next_number_reshaped = Lambda(lambda x: K.reshape(x, (1, *next_number.shape)))(next_number)
-    next_number_output = Concatenate(axis=1)([constant_input_filler, next_number_reshaped])
+    next_number_reshaped = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, *next_number.shape)))(next_number)
+    next_number_output = tf.keras.layers.Concatenate(axis=1)([constant_input_filler, next_number_reshaped])
     cropped_number_after_increment = make_output_same_length_as_input(layer_to_crop=next_number_output,
                                                                       role=roles[1],
                                                                       filler_len=filler_len,
@@ -156,7 +154,7 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
     # Number to be incremented
     input_num_elements, flattened_tree_num_elements = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
     shape = (flattened_tree_num_elements + filler_len, 1)
-    flattened_incrementing_input = Input(shape=(*shape,), batch_size=1)
+    flattened_incrementing_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1)
 
     block_id = 0
     shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,
@@ -178,7 +176,7 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
         constant_input_filler=tmp_reshaped_fake_filler
     )
 
-    return Model(
+    return tf.keras.Model(
         inputs=[
             left_shift_input,
             right_shift_input,

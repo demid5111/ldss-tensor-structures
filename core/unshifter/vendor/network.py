@@ -1,9 +1,8 @@
 from functools import reduce
 
 import numpy as np
+import tensorflow as tf
 import scipy.sparse
-
-from keras.models import Model
 
 from core.joiner.vendor.network import constant_input, filler_input_subgraph
 
@@ -40,7 +39,7 @@ def build_tree_unshifter_network(roles, fillers_shapes, role_index=0):
 
     Draw it with instructions from README.md
 
-    >>> from keras.utils import plot_model
+    >>> from tf.keras.utils import plot_model
     >>> keras_joiner = None # some place in the main code after this function is called
     >>> plot_model(keras_joiner, to_file='keras_joiner.png')
 
@@ -55,7 +54,7 @@ def build_tree_unshifter_network(roles, fillers_shapes, role_index=0):
     left_shift_input = constant_input(roles[role_index], filler_len, max_depth, layer_name, unshift_matrix)
     left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
 
-    return Model(
+    return tf.keras.Model(
         inputs=[
             left_shift_input,
             *left_inputs,

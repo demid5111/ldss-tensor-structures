@@ -80,7 +80,7 @@ class UnshiftingIntegrationTest(unittest.TestCase):
             *prepared_for_unshift
         ])
 
-        extracted_child = extracted_child.reshape((*extracted_child.shape[1:], ))
+        extracted_child = extracted_child.reshape((*extracted_child.shape[1:],))
         t_active_voice_right_child_after_unshift = extract_per_level_tensor_representation_after_unshift(
             extracted_child,
             max_tree_depth=MAX_TREE_DEPTH - 1,

@@ -31,7 +31,7 @@ def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basi
     input_tensors = map(lambda s: prepare_input(s, input_structure_max_shape), subtrees)
 
     fillers_joined = joiner_network.predict_on_batch([i for p in input_tensors for i in p])
-    fillers_joined = fillers_joined.reshape((*fillers_joined.shape[1:], ))
+    fillers_joined = fillers_joined.reshape((*fillers_joined.shape[1:],))
     single_role_shape = basic_roles[0].shape
     single_filler_shape = basic_fillers[0].shape
     max_depth = input_structure_max_shape.shape[0]

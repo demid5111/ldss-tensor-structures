@@ -61,7 +61,7 @@ def elementary_extract(extract_network, input_structure_max_shape, basic_roles, 
     extracted_child = extract_network.predict_on_batch([
         *prepared_for_unshift
     ])
-    extracted_child = extracted_child.reshape((*extracted_child.shape[1:], ))
+    extracted_child = extracted_child.reshape((*extracted_child.shape[1:],))
 
     return extract_per_level_tensor_representation_after_unshift(
         extracted_child,

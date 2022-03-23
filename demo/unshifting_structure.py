@@ -90,7 +90,7 @@ if __name__ == '__main__':
     # original_structure[1][0][2][1][0] = 500.
 
     prepared_for_unshift = reshape_to_satisfy_max_depth_after_unshift(original_structure,
-                                                                      MAX_TREE_DEPTH+1,
+                                                                      MAX_TREE_DEPTH + 1,
                                                                       SINGLE_ROLE_SHAPE,
                                                                       SINGLE_FILLER_SHAPE)
 

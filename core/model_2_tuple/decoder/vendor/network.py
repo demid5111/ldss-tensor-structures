@@ -35,7 +35,8 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
                                                                                       stop_level=max_depth - 1,
                                                                                       role_extraction_order=[2],
                                                                                       prefix='extracting_weight')
-        weight_raw_output = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len,)))(weight_raw_output)
+        weight_raw_output = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len,)))(
+            weight_raw_output)
 
         return tf.keras.Model(
             inputs=[

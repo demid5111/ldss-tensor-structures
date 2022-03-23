@@ -57,7 +57,7 @@ class IncrementTest(unittest.TestCase, TensorAssertions):
             a_tree_flattened
         ])
 
-        new_number = new_number.reshape((*new_number.shape[1:], ))
+        new_number = new_number.reshape((*new_number.shape[1:],))
         return (
             extract_per_level_tensor_representation_after_unshift(new_number, max_tree_depth,
                                                                   SINGLE_ROLE_SHAPE,

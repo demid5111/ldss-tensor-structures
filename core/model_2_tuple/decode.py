@@ -29,7 +29,8 @@ def decode_model_2_tuple_tpr(mta_result_encoded: np.array, decoder=None, model_2
 
     if decoder is None:
         decoder = build_decode_model_2_tuple_network(filler_len=filler_len, dual_roles=dual_roles,
-                                                       max_depth=MAX_TREE_DEPTH, model_2_tuple_has_weights=model_2_tuple_has_weights)
+                                                     max_depth=MAX_TREE_DEPTH,
+                                                     model_2_tuple_has_weights=model_2_tuple_has_weights)
 
     if not hasattr(mta_result_encoded, 'shape') or len(mta_result_encoded.shape) > 1:
         flattened_model_2_tuple_tpr = flattenize_per_tensor_representation(mta_result_encoded)

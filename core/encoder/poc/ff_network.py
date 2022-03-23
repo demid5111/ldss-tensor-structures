@@ -32,7 +32,8 @@ class FeedForwardNetwork:
         self.fill_inputs(input_data)
         for layer_id in nx.topological_sort(self.graph):
             parents = self.graph.predecessors(layer_id)
-            self.graph.nodes[layer_id]['layer_ref'].forward([self.graph.nodes[p_id]['layer_ref'].output for p_id in parents])
+            self.graph.nodes[layer_id]['layer_ref'].forward(
+                [self.graph.nodes[p_id]['layer_ref'].output for p_id in parents])
 
     def unique_id(self):
         self.counter += 1

@@ -5,6 +5,7 @@ class Activation(ILayer):
     """
     Performs activation over corresponding tensor
     """
+
     def __init__(self, t):
         super().__init__()
         self.type = t

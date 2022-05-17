@@ -11,16 +11,30 @@ def get_img_folder_path():
     return tmp_artifacts_root
 
 
-def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
+def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data, language='ru'):
     font_settings = {
         'fontname': 'Times New Roman',
         'fontsize': 12
     }
 
+    i8n_mapping = {
+        'memory': {
+            'ru': 'Использованная память, Мбайт',
+            'en': 'Peak memory, Mb'
+        },
+        'time': {
+            'ru': 'Время выполнения, сек',
+            'en': 'Time elapsed, sec'
+        },
+        'x_axis': {
+            'ru': 'Глубина структуры',
+            'en': 'Tree depth'
+        }
+    }
+
     sample_ticks = scipy_data['depth'].tolist()
     if comparison_criteria == 'memory':
-        y_title = 'Использованная память, Мбайт'
-        chart_title = 'peak memory usage'
+        y_title = i8n_mapping['memory'][language]
 
         filtered_data_df = pd.DataFrame({
             'x': sample_ticks,
@@ -29,9 +43,7 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
             'scipy': scipy_data[f'{task}_FINISH'] - scipy_data[f'{task}_START'],
         })
     else:  # it is time
-        y_title = 'Время выполнения, сек.'
-        chart_title = 'time elapsed'
-        chart_title = 'time elapsed'
+        y_title = i8n_mapping['time'][language]
 
         filtered_data_df = pd.DataFrame({
             'x': sample_ticks,
@@ -48,19 +60,19 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data):
              linestyle='dotted', linewidth=2, label='SciPy')
     plt.yscale('log')
     plt.ylabel(y_title, **font_settings)
-    plt.xlabel('Глубина структуры', **font_settings)
+    plt.xlabel(i8n_mapping['x_axis'][language], **font_settings)
     plt.xticks(sample_ticks, **font_settings)
     plt.yticks(**font_settings)
 
-    task_title = f'{task.title()} task'
-    task_title = 'Задача кодирования структуры' if task == 'encode' else 'Задача декодирования структуры'
-    plt.title(task_title)
+    # task_title = f'{task.title()} task'
+    # task_title = 'Задача кодирования структуры' if task == 'encode' else 'Задача декодирования структуры'
+    # plt.title(task_title)
     plt.legend()
     return plt
 
 
-def save_chart(plot, task, comparison_criteria):
-    path_template = os.path.join(get_img_folder_path(), f'{task}_{comparison_criteria}.{{}}')
+def save_chart(plot, task, comparison_criteria, language='ru'):
+    path_template = os.path.join(get_img_folder_path(), f'{task}_{comparison_criteria}_{language}.{{}}')
     os.makedirs(get_img_folder_path(), exist_ok=True)
     plot.savefig(path_template.format('eps'), format='eps', dpi=600)
 
@@ -70,20 +82,15 @@ def main():
     numpy_df = pd.read_csv('./data/test_numpy.csv', dtype={'depth': 'int16'})
     scipy_df = pd.read_csv('./data/test_scipy.csv', dtype={'depth': 'int16'})
 
-    plot = create_chart(task='decode',
-                        comparison_criteria='memory',
-                        nn_data=nn_df,
-                        numpy_data=numpy_df,
-                        scipy_data=scipy_df)
-    save_chart(plot, task='decode', comparison_criteria='memory')
-
+    language = 'ru'
     for task, criteria in itertools.product(('encode', 'decode'), ('memory', 'time')):
         plot = create_chart(task=task,
                             comparison_criteria=criteria,
                             nn_data=nn_df,
                             numpy_data=numpy_df,
-                            scipy_data=scipy_df)
-        save_chart(plot, task=task, comparison_criteria=criteria)
+                            scipy_data=scipy_df,
+                            language=language)
+        save_chart(plot, task=task, comparison_criteria=criteria, language=language)
 
 
 if __name__ == '__main__':

@@ -74,7 +74,7 @@ def create_chart(task, comparison_criteria, nn_data, numpy_data, scipy_data, lan
 def save_chart(plot, task, comparison_criteria, language='ru'):
     path_template = os.path.join(get_img_folder_path(), f'{task}_{comparison_criteria}_{language}.{{}}')
     os.makedirs(get_img_folder_path(), exist_ok=True)
-    plot.savefig(path_template.format('eps'), format='eps', dpi=600)
+    plot.savefig(path_template.format('png'), format='png', dpi=1000)
 
 
 def main():
@@ -82,7 +82,7 @@ def main():
     numpy_df = pd.read_csv('./data/test_numpy.csv', dtype={'depth': 'int16'})
     scipy_df = pd.read_csv('./data/test_scipy.csv', dtype={'depth': 'int16'})
 
-    language = 'ru'
+    language = 'en'
     for task, criteria in itertools.product(('encode', 'decode'), ('memory', 'time')):
         plot = create_chart(task=task,
                             comparison_criteria=criteria,

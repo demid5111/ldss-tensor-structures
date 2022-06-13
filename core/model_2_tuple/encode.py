@@ -2,9 +2,9 @@ import numpy as np
 
 from core.active_passive_net.utils import elementary_join
 from core.joiner.utils import generate_shapes
-from demo.neurosymbolic_decision_making.copy_encoder import build_tree_joiner_network
 from .core import Model2Tuple
 from .filler_factory import FillerFactory
+from ..joiner.vendor.network import build_tree_joiner_network
 
 
 def encode_model_2_tuple(model_2_tuple: Model2Tuple, encoder=None) -> np.array:

@@ -28,15 +28,19 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     flatten_layers = [tf.keras.layers.Flatten()(input_layer) for input_layer in inputs_before_flattens]
     concat_layer = tf.keras.layers.concatenate(flatten_layers)
     transpose_layer = tf.keras.layers.Lambda(mat_transpose)(concat_layer)
-    return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul)([
-        shift_layer,
-        transpose_layer
-    ])
+
+    def mat_mul_with_constant(tensor):
+        constant = tf.keras.backend.constant(shift_layer, dtype='float32')
+        return tf.keras.backend.dot(constant, tensor)
+
+    return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul_with_constant)(transpose_layer)
 
 
 def constant_input(role, filler_len, max_depth, name, matrix_creator):
+    batch_size = 1
     np_constant = matrix_creator(role, filler_len, max_depth, name)
-    return keras_constant_layer(np_constant, name=name)
+    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+    return np_constant
     # np_constant = np_constant.reshape((1, *np_constant.shape))
     # tf_constant = K.constant(np_constant, dtype='float32')
     # return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
@@ -78,7 +82,6 @@ def build_join_branch(roles, fillers_shapes):
     matmul_layers = []
     for role_index, role in enumerate(roles):
         shift_input = constant_input(role, filler_len, max_depth, f'constant_input_cons{role_index}_', shift_matrix)
-        constant_inputs.append(shift_input)
 
         inputs, matmul_layer = filler_input_subgraph(fillers_shapes, shift_input)
         variable_inputs.append(inputs)
@@ -86,10 +89,7 @@ def build_join_branch(roles, fillers_shapes):
 
     sum_layer = tf.keras.layers.Add()(matmul_layers)
 
-    return (
-               tuple(constant_inputs),
-               tuple(variable_inputs)
-           ), sum_layer
+    return tuple(variable_inputs), sum_layer
 
 
 def build_tree_joiner_network(roles, fillers_shapes):
@@ -105,10 +105,9 @@ def build_tree_joiner_network(roles, fillers_shapes):
     :param fillers_shapes:
     :return:
     """
-    inputs, output = build_join_branch(roles, fillers_shapes)
-    const_inputs, variable_inputs = inputs
+    variable_inputs, output = build_join_branch(roles, fillers_shapes)
 
-    model_inputs = [*const_inputs]
+    model_inputs = []
     for inputs_list in variable_inputs:
         model_inputs.extend(inputs_list)
 
@@ -116,3 +115,11 @@ def build_tree_joiner_network(roles, fillers_shapes):
         inputs=model_inputs,
         outputs=output
     )
+
+
+def main():
+    ...
+
+
+if __name__ == '__main__':
+    main()

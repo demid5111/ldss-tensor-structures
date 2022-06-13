@@ -11,7 +11,7 @@ class Model2Tuple:
         self.weight = weight
 
     def __str__(self):
-        return f'(s^{self.linguistic_scale_size}_{self.term_index}, {self.alpha})'
+        return f'(s^{self.linguistic_scale_size}_{self.term_index}, {self.alpha:.3})'
 
     def to_number(self):
         tau = self.linguistic_scale_size - 1

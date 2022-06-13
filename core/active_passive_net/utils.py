@@ -29,11 +29,7 @@ def prepare_input(subtree, max_shape):
 
 def elementary_join(joiner_network, input_structure_max_shape, basic_roles, basic_fillers, subtrees):
     input_tensors = map(lambda s: prepare_input(s, input_structure_max_shape), subtrees)
-    try:
-        fillers_joined = joiner_network.predict_on_batch([i for p in input_tensors for i in p])
-    except AttributeError:
-        print('It turns to be a loaded SavedModel, then we infer it differently')
-        fillers_joined = joiner_network.predict(*[i for p in input_tensors for i in p])
+    fillers_joined = joiner_network.predict_on_batch([i for p in input_tensors for i in p])
     fillers_joined = fillers_joined.reshape((*fillers_joined.shape[1:],))
     single_role_shape = basic_roles[0].shape
     single_filler_shape = basic_fillers[0].shape

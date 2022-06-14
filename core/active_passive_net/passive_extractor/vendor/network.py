@@ -2,15 +2,14 @@ import numpy as np
 import tensorflow as tf
 
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
-from core.joiner.vendor.network import constant_input, mat_mul, shift_matrix
+from core.joiner.vendor.network import shift_matrix
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import keras_constant_layer, create_constant
+from core.utils import create_constant
 
 
 def create_shift_matrix_as_input(role, role_index, filler_len, max_depth, prefix):
     left_shift_input_name = '{}constant_input_(cons{})'.format(prefix + '_' if prefix else '', role_index)
     return create_constant(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
-    # return constant_input(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
 
 
 # TODO: refactor and move to the joiner network
@@ -97,7 +96,6 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     batch_size = 1
     np_constant = np_constant.reshape((batch_size, *np_constant.shape))
 
-    const_fake_extender = keras_constant_layer(np_constant, name='passive_fake_extender_verb_agent')
     concatenate_verb = tf.keras.layers.Concatenate(axis=0)(
         [verb_extraction_output,
          tf.keras.backend.constant(np_constant, dtype='float32'),

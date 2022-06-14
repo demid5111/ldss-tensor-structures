@@ -6,7 +6,7 @@ from core.active_passive_net.classifier.vendor.network import build_one_level_ex
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch, create_shift_matrix_as_input
 from core.peano.utils import number_to_tree
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import flattenize_per_tensor_representation, keras_constant_layer
+from core.utils import flattenize_per_tensor_representation
 
 
 def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth):

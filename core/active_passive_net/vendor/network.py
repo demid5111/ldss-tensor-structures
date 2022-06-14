@@ -4,7 +4,6 @@ import tensorflow as tf
 from core.active_passive_net.active_extractor.vendor.network import extract_semantic_tree_from_active_voice_branch
 from core.active_passive_net.classifier.vendor.network import build_classification_branch
 from core.active_passive_net.passive_extractor.vendor.network import extract_semantic_tree_from_passive_voice_branch
-from core.utils import keras_constant_layer
 
 
 def build_active_passive_network(roles, dual_roles, fillers, tree_shape):

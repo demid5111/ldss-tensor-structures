@@ -6,7 +6,7 @@ import scipy.sparse
 import tensorflow as tf
 
 from core.decoder.vendor.network import mat_transpose
-from core.utils import keras_constant_layer, create_constant
+from core.utils import create_constant
 
 
 def mat_mul(tensors):
@@ -34,14 +34,6 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
         return tf.keras.backend.dot(constant, tensor)
 
     return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul_with_constant)(transpose_layer)
-
-
-def constant_input(role, filler_len, max_depth, name, matrix_creator):
-    np_constant = matrix_creator(role, filler_len, max_depth, name)
-    return keras_constant_layer(np_constant, name=name)
-    # np_constant = np_constant.reshape((1, *np_constant.shape))
-    # tf_constant = K.constant(np_constant, dtype='float32')
-    # return Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
 
 
 def shift_matrix(role, filler_size, max_depth, name, mode='dense'):

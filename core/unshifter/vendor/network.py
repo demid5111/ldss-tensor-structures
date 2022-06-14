@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import scipy.sparse
 
-from core.joiner.vendor.network import constant_input, filler_input_subgraph
+from core.joiner.vendor.network import filler_input_subgraph
 from core.utils import create_constant
 
 

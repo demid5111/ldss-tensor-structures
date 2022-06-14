@@ -4,7 +4,6 @@ import tensorflow as tf
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import keras_constant_layer
 
 
 def crop_tensor(layer, role, filler_len, stop_level):
@@ -32,12 +31,6 @@ def custom_constant_layer(const_size, name, np_constant=None):
     batch_size=1
     np_constant = np_constant.reshape((batch_size, *np_constant.shape))
     return np_constant
-
-    const_fake_extender = keras_constant_layer(np_constant, name=name)
-
-    # TODO: reshaping constant input??
-    return tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, const_fake_extender.shape))(
-        const_fake_extender), const_fake_extender
 
 
 def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_roles, filler_len, max_depth):

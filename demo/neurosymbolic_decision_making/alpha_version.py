@@ -4,9 +4,7 @@ from pathlib import Path
 
 import tensorflow as tf
 
-from core.model_2_tuple import Model2Tuple, aggregate_model_tuples
-from demo.neurosymbolic_decision_making.copy_decode import decode_model_2_tuple_tpr
-from demo.neurosymbolic_decision_making.copy_encode import encode_model_2_tuple
+from core.model_2_tuple import Model2Tuple, aggregate_model_tuples, encode_model_2_tuple, decode_model_2_tuple_tpr
 
 from demo.neurosymbolic_decision_making.copy_generator import pack_with_full_mta_encoding, single_tpr_len
 from demo.neurosymbolic_decision_making.copy_infer_mta import _generate_data, infer_model

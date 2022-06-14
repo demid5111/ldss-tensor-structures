@@ -4,7 +4,8 @@ import numpy as np
 import tensorflow as tf
 import scipy.sparse
 
-from core.joiner.vendor.network import constant_input, filler_input_subgraph
+from core.joiner.vendor.network import filler_input_subgraph
+from core.utils import create_matrix_constant
 
 
 def unshift_matrix(role, filler_size, max_depth, name='unshift', mode='dense'):
@@ -51,12 +52,11 @@ def build_tree_unshifter_network(roles, fillers_shapes, role_index=0):
     max_depth = len(fillers_shapes)
 
     layer_name = 'constant_input_(ex0)'.format(role_index)
-    left_shift_input = constant_input(roles[role_index], filler_len, max_depth, layer_name, unshift_matrix)
+    left_shift_input = create_matrix_constant(roles[role_index], filler_len, max_depth, layer_name, unshift_matrix)
     left_inputs, left_matmul_layer = filler_input_subgraph(fillers_shapes, left_shift_input)
 
     return tf.keras.Model(
         inputs=[
-            left_shift_input,
             *left_inputs,
         ],
         outputs=left_matmul_layer)

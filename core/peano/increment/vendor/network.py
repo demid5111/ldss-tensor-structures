@@ -126,22 +126,18 @@ def constant_inputs_for_increment_block(roles, fillers, max_depth, block_id):
     # Incrementing value
     new_number_one = number_to_tree(1, max_depth, fillers, roles)
     one = flattenize_per_tensor_representation(new_number_one)
-    tmp_reshaped_increment, const_increment = custom_constant_layer(const_size=filler_len,
-                                                                    name='const_increment',
-                                                                    np_constant=one)
+    np_constant = custom_constant_layer(const_size=filler_len,
+                                        name='const_increment',
+                                        np_constant=one)
 
     # Filler constant for filling first level that is missed after join
-    tmp_reshaped_fake_filler, const_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
+    tmp_reshaped_fake_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
 
     return (
                left_shift_input,
                right_shift_input
-           ), (
-               tmp_reshaped_increment,
-               const_increment
-           ), (
-               tmp_reshaped_fake_filler,
-               const_filler
+           ), np_constant, (
+               tmp_reshaped_fake_filler
            )
 
 
@@ -154,11 +150,9 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
     flattened_incrementing_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1)
 
     block_id = 0
-    shift_input, increment_input, filler_input = constant_inputs_for_increment_block(roles, fillers, max_depth,
+    shift_input, tmp_reshaped_increment, tmp_reshaped_fake_filler = constant_inputs_for_increment_block(roles, fillers, max_depth,
                                                                                      block_id)
     left_shift_input, right_shift_input = shift_input
-    tmp_reshaped_increment, const_increment = increment_input
-    tmp_reshaped_fake_filler, const_filler = filler_input
 
     output = increment_block(
         incrementing_input=flattened_incrementing_input,
@@ -175,10 +169,6 @@ def build_increment_network(roles, dual_roles, fillers, max_depth):
 
     return tf.keras.Model(
         inputs=[
-            left_shift_input,
-            right_shift_input,
-            const_increment,
-            const_filler,
             flattened_incrementing_input,
         ],
         outputs=output)

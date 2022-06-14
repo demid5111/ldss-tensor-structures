@@ -29,9 +29,12 @@ def custom_constant_layer(const_size, name, np_constant=None):
     else:
         np_constant = np.reshape(np_constant, (*np_constant.shape, 1))
 
+    batch_size=1
+    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+    return np_constant
+
     const_fake_extender = keras_constant_layer(np_constant, name=name)
-    # tf_constant = tf.keras.backend.constant(np_constant, dtype='float32')
-    # const_fake_extender = Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
+
     # TODO: reshaping constant input??
     return tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, const_fake_extender.shape))(
         const_fake_extender), const_fake_extender
@@ -95,7 +98,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
 
     # later we have to join two subtrees of different depth. for that we have to
     # make filler of verb of the same depth - make fake constant layer
-    tmp_reshaped_fake, const_input = custom_constant_layer(const_size=filler_len,
+    tmp_reshaped_fake = custom_constant_layer(const_size=filler_len,
                                                            name='active_fake_extender_verb_agent')
     concatenate_verb = tf.keras.layers.Concatenate(axis=1)(
         [verb_extraction_output, tmp_reshaped_fake, tmp_reshaped_fake])
@@ -119,6 +122,4 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                                              reshaped_agentxr0_pxr1
                                                                          ],
                                                                          prefix='active_join(verb, join(agent,p))')
-    return [
-               const_input
-           ], semantic_tree_output
+    return semantic_tree_output

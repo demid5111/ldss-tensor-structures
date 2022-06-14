@@ -94,9 +94,14 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     # later we have to join two subtrees of different depth. for that we have to
     # make filler of verb of the same depth - make fake constant layer
     np_constant = np.zeros((filler_len, 1))
+    batch_size = 1
+    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+
     const_fake_extender = keras_constant_layer(np_constant, name='passive_fake_extender_verb_agent')
     concatenate_verb = tf.keras.layers.Concatenate(axis=0)(
-        [verb_extraction_output, const_fake_extender, const_fake_extender])
+        [verb_extraction_output,
+         tf.keras.backend.constant(np_constant, dtype='float32'),
+         tf.keras.backend.constant(np_constant, dtype='float32')])
     # TODO: why is there a constant 3?
     reshaped_verb = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
         concatenate_verb)
@@ -106,7 +111,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
         agentxr0_pxr1_output)
     # TODO: reshaping constant input??
     tmp_reshaped_fake = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len, 1)))(
-        const_fake_extender)
+        tf.keras.backend.constant(np_constant, dtype='float32'))
     concatenate_agentxr0_pxr1 = tf.keras.layers.Concatenate(axis=0)([tmp_reshaped_fake, tmp_reshaped_agentxr0_pxr1])
     # TODO: why is there a constant 3?
     reshaped_agentxr0_pxr1 = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
@@ -120,6 +125,4 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                                                                              reshaped_agentxr0_pxr1
                                                                          ],
                                                                          prefix='passive_join(verb, join(agent,p))')
-    return [
-               const_fake_extender
-           ], semantic_tree_output
+    return semantic_tree_output

@@ -11,7 +11,7 @@ def build_decode_number_network(fillers, dual_roles, max_depth):
     shape = (flattened_tree_num_elements + filler_len, 1)
     flattened_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1)
 
-    const_inputs, is_not_zero, unshifted = check_if_not_zero_branch(
+    is_not_zero, unshifted = check_if_not_zero_branch(
         decrementing_input=flattened_input,
         role=dual_roles[0],
         filler_len=filler_len,
@@ -20,7 +20,6 @@ def build_decode_number_network(fillers, dual_roles, max_depth):
 
     return tf.keras.Model(
         inputs=[
-            *const_inputs,
             flattened_input
         ],
         outputs=[

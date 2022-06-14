@@ -6,7 +6,7 @@ import scipy.sparse
 import tensorflow as tf
 
 from core.decoder.vendor.network import mat_transpose
-from core.utils import create_constant
+from core.utils import create_matrix_constant
 
 
 def mat_mul(tensors):
@@ -30,7 +30,7 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     transpose_layer = tf.keras.layers.Lambda(mat_transpose)(concat_layer)
 
     def mat_mul_with_constant(tensor):
-        constant = tf.keras.backend.constant(shift_layer, dtype='float32')
+        constant = tf.constant(shift_layer, dtype='float32')
         return tf.keras.backend.dot(constant, tensor)
 
     return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul_with_constant)(transpose_layer)
@@ -70,7 +70,7 @@ def build_join_branch(roles, fillers_shapes):
     variable_inputs = []
     matmul_layers = []
     for role_index, role in enumerate(roles):
-        shift_input = create_constant(role, filler_len, max_depth, f'constant_input_cons{role_index}_', shift_matrix)
+        shift_input = create_matrix_constant(role, filler_len, max_depth, f'constant_input_cons{role_index}_', shift_matrix)
 
         inputs, matmul_layer = filler_input_subgraph(fillers_shapes, shift_input)
         variable_inputs.append(inputs)

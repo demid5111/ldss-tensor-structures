@@ -1,12 +1,12 @@
 import numpy as np
 import tensorflow as tf
 
-from core.active_passive_net.active_extractor.vendor.network import custom_cropping_layer, custom_constant_layer
+from core.active_passive_net.active_extractor.vendor.network import custom_cropping_layer
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch, normalization
 from core.active_passive_net.passive_extractor.vendor.network import build_join_branch, create_shift_matrix_as_input
 from core.peano.utils import number_to_tree
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import flattenize_per_tensor_representation
+from core.utils import flattenize_per_tensor_representation, create_custom_constant
 
 
 def make_output_same_length_as_input(layer_to_crop, role, filler_len, max_depth):
@@ -49,9 +49,8 @@ def check_if_not_zero_branch(decrementing_input, role, filler_len, max_depth, bl
     return tf.keras.layers.Lambda(normalization)(global_max_pool), one_tensor_output
 
 
-def check_if_zero_branch(flag_input, block_id):
-    np_constant = np.array([-1])
-    const_neg_1 = tf.keras.backend.constant(np_constant, dtype='float32')
+def check_if_zero_branch(flag_input):
+    const_neg_1 = tf.constant(np.array([-1]), dtype='float32')
     sum_is_zero_const = tf.keras.layers.Add()([flag_input, const_neg_1])
     return tf.keras.layers.Multiply()([sum_is_zero_const, const_neg_1])
 
@@ -66,7 +65,7 @@ def condition_branch(condition_input, condition_if_not_zero, condition_if_zero, 
         max_depth=max_depth,
         block_id=block_id + 1)
 
-    is_zero = check_if_zero_branch(is_not_zero, block_id)
+    is_zero = check_if_zero_branch(is_not_zero)
     is_value_zero_branch = tf.keras.layers.Lambda(lambda tensors: tensors[0] * tensors[1])([
         condition_if_zero,
         is_zero
@@ -126,12 +125,10 @@ def constant_inputs_for_increment_block(roles, fillers, max_depth, block_id):
     # Incrementing value
     new_number_one = number_to_tree(1, max_depth, fillers, roles)
     one = flattenize_per_tensor_representation(new_number_one)
-    np_constant = custom_constant_layer(const_size=filler_len,
-                                        name='const_increment',
-                                        np_constant=one)
+    np_constant = create_custom_constant(const_size=filler_len, np_constant=one)
 
     # Filler constant for filling first level that is missed after join
-    tmp_reshaped_fake_filler = custom_constant_layer(const_size=filler_len, name='const_filler')
+    tmp_reshaped_fake_filler = create_custom_constant(const_size=filler_len)
 
     return (
                left_shift_input,

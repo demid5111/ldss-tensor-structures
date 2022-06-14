@@ -1,7 +1,7 @@
 import tensorflow as tf
 
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import create_constant
+from core.utils import create_matrix_constant
 
 
 def normalization(x):
@@ -21,7 +21,7 @@ def build_universal_extraction_branch(model_input, roles, filler_len, max_depth,
     for level_index, role_index in zip(range(max_depth, stop_level - 1, -1), role_extraction_order):
         _, flattened_num_elements = unshift_matrix(roles[role_index], filler_len, level_index).shape
         layer_name = 'constant_input_level_{}_(ex{})'.format(prefix + '_' if prefix else '', level_index, role_index)
-        left_shift_input = create_constant(roles[role_index], filler_len, level_index, layer_name, unshift_matrix)
+        left_shift_input = create_matrix_constant(roles[role_index], filler_len, level_index, layer_name, unshift_matrix)
 
         current_num_elements = flattened_num_elements + filler_len
         target_num_elements = flattened_num_elements
@@ -34,7 +34,7 @@ def build_universal_extraction_branch(model_input, roles, filler_len, max_depth,
             clip_first_level)
 
         def mat_mul_with_constant(tensor):
-            constant = tf.keras.backend.constant(left_shift_input, dtype='float32')
+            constant = tf.constant(left_shift_input, dtype='float32')
             return tf.keras.backend.dot(constant, tensor)
 
         current_input = tf.keras.layers.Lambda(mat_mul_with_constant)(current_input)

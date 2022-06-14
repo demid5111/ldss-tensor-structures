@@ -1,9 +1,9 @@
 import tensorflow as tf
 
-from core.active_passive_net.active_extractor.vendor.network import custom_constant_layer
 from core.peano.increment.vendor.network import constant_inputs_for_increment_block, increment_block, condition_branch, \
     build_extract_branch
 from core.unshifter.vendor.network import unshift_matrix
+from core.utils import create_custom_constant
 
 
 def sum_block(incrementing_input, decrementing_input,
@@ -59,7 +59,7 @@ def build_sum_network(roles, fillers, dual_roles, max_depth, number_sum_blocks=1
     left_shift_input, right_shift_input = shift_input
 
     target_elements, _ = unshift_matrix(roles[0], filler_len, max_depth - 1).shape
-    constant_for_decrementing_input = custom_constant_layer(const_size=target_elements + filler_len, name='const_one')
+    constant_for_decrementing_input = create_custom_constant(const_size=target_elements + filler_len)
 
     incremented = flattened_incrementing_input
     decremented = flattened_decrementing_input

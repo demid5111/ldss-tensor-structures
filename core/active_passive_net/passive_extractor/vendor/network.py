@@ -1,15 +1,14 @@
-import numpy as np
 import tensorflow as tf
 
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
 from core.joiner.vendor.network import shift_matrix
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import create_constant
+from core.utils import create_matrix_constant, create_custom_constant
 
 
 def create_shift_matrix_as_input(role, role_index, filler_len, max_depth, prefix):
     left_shift_input_name = '{}constant_input_(cons{})'.format(prefix + '_' if prefix else '', role_index)
-    return create_constant(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
+    return create_matrix_constant(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
 
 
 # TODO: refactor and move to the joiner network
@@ -21,11 +20,11 @@ def build_join_branch(roles, filler_len, max_depth, inputs, prefix='', left_shif
         right_shift_input = create_shift_matrix_as_input(roles[1], 1, filler_len, max_depth, prefix)
 
     def mat_mul_with_constant_left(tensor):
-        constant = tf.keras.backend.constant(left_shift_input[0], dtype='float32')
+        constant = tf.constant(left_shift_input[0], dtype='float32')
         return tf.keras.backend.dot(constant, tensor)
 
     def mat_mul_with_constant_right(tensor):
-        constant = tf.keras.backend.constant(right_shift_input[0], dtype='float32')
+        constant = tf.constant(right_shift_input[0], dtype='float32')
         return tf.keras.backend.dot(constant, tensor)
 
     left_matmul_layer = tf.keras.layers.Lambda(mat_mul_with_constant_left)(inputs[0][0])
@@ -81,25 +80,24 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     # TODO: define how to tackle extractions not till the bottom of structure
     # given that we have all fillers maximum joining depth is equal to 1
     agentxr0_pxr1_output = build_join_branch(roles=roles,
-                                                                         filler_len=filler_len,
-                                                                         max_depth=1,
-                                                                         inputs=[
-                                                                             agent_extraction_output,
-                                                                             p_extraction_output
-                                                                         ],
-                                                                         prefix='passive_join(agent,p)'
-                                                                         )
+                                             filler_len=filler_len,
+                                             max_depth=1,
+                                             inputs=[
+                                                 agent_extraction_output,
+                                                 p_extraction_output
+                                             ],
+                                             prefix='passive_join(agent,p)'
+                                             )
 
     # later we have to join two subtrees of different depth. for that we have to
     # make filler of verb of the same depth - make fake constant layer
-    np_constant = np.zeros((filler_len, 1))
-    batch_size = 1
-    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+    np_constant = create_custom_constant(filler_len)
 
-    concatenate_verb = tf.keras.layers.Concatenate(axis=0)(
-        [verb_extraction_output,
-         tf.keras.backend.constant(np_constant, dtype='float32'),
-         tf.keras.backend.constant(np_constant, dtype='float32')])
+    concatenate_verb = tf.keras.layers.Concatenate(axis=0)([
+        verb_extraction_output,
+        tf.constant(np_constant, dtype='float32'),
+        tf.constant(np_constant, dtype='float32')
+    ])
     # TODO: why is there a constant 3?
     reshaped_verb = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
         concatenate_verb)
@@ -109,18 +107,18 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
         agentxr0_pxr1_output)
     # TODO: reshaping constant input??
     tmp_reshaped_fake = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len, 1)))(
-        tf.keras.backend.constant(np_constant, dtype='float32'))
+        tf.constant(np_constant, dtype='float32'))
     concatenate_agentxr0_pxr1 = tf.keras.layers.Concatenate(axis=0)([tmp_reshaped_fake, tmp_reshaped_agentxr0_pxr1])
     # TODO: why is there a constant 3?
     reshaped_agentxr0_pxr1 = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
         concatenate_agentxr0_pxr1)
 
     semantic_tree_output = build_join_branch(roles=roles,
-                                                                         filler_len=filler_len,
-                                                                         max_depth=2,
-                                                                         inputs=[
-                                                                             reshaped_verb,
-                                                                             reshaped_agentxr0_pxr1
-                                                                         ],
-                                                                         prefix='passive_join(verb, join(agent,p))')
+                                             filler_len=filler_len,
+                                             max_depth=2,
+                                             inputs=[
+                                                 reshaped_verb,
+                                                 reshaped_agentxr0_pxr1
+                                             ],
+                                             prefix='passive_join(verb, join(agent,p))')
     return semantic_tree_output

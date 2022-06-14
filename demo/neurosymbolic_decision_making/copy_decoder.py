@@ -1,7 +1,7 @@
 import tensorflow as tf
 
+from core.active_passive_net.classifier.vendor.network import build_universal_extraction_branch
 from core.unshifter.vendor.network import unshift_matrix
-from demo.neurosymbolic_decision_making.copy_apnet_classifier_network import build_universal_extraction_branch
 
 
 def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_2_tuple_has_weights):

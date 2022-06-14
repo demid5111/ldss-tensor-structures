@@ -46,7 +46,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                     stop_level=stop_level_for_verb,
                                                     role_extraction_order=[1, 0],
                                                     prefix='active_verb_extract')
-    verb_extraction_const_inputs, verb_raw_output, _ = verb_branch
+    verb_raw_output, _ = verb_branch
     verb_extraction_output = crop_tensor(layer=verb_raw_output,
                                          role=roles[0],
                                          filler_len=filler_len,
@@ -60,7 +60,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                      stop_level=stop_level_for_agent,
                                                      role_extraction_order=[0],
                                                      prefix='active_agent_extract')
-    agent_extraction_const_inputs, agent_raw_output, _ = agent_branch
+    agent_raw_output, _ = agent_branch
     agent_extraction_output = crop_tensor(layer=agent_raw_output,
                                           role=roles[0],
                                           filler_len=filler_len,
@@ -75,7 +75,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                  role_extraction_order=[1, 1],
                                                  prefix='active_p_extract')
 
-    p_extraction_const_inputs, p_raw_output, current_num_elements = p_branch
+    p_raw_output, current_num_elements = p_branch
     p_extraction_output = crop_tensor(layer=p_raw_output,
                                       role=roles[0],
                                       filler_len=filler_len,
@@ -83,7 +83,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
 
     # TODO: define how to tackle extractions not till the bottom of structure
     # given that we have all fillers maximum joining depth is equal to 1
-    agentxr0_pxr1_const_inputs, agentxr0_pxr1_output = build_join_branch(roles=roles,
+    agentxr0_pxr1_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,
                                                                          max_depth=1,
                                                                          inputs=[
@@ -111,7 +111,7 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
     reshaped_agentxr0_pxr1 = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
         concatenate_agentxr0_pxr1)
 
-    semantic_tree_const_inputs, semantic_tree_output = build_join_branch(roles=roles,
+    semantic_tree_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,
                                                                          max_depth=2,
                                                                          inputs=[
@@ -120,10 +120,5 @@ def extract_semantic_tree_from_active_voice_branch(input_layer, roles, dual_role
                                                                          ],
                                                                          prefix='active_join(verb, join(agent,p))')
     return [
-               *verb_extraction_const_inputs,
-               *agent_extraction_const_inputs,
-               *p_extraction_const_inputs,
-               *agentxr0_pxr1_const_inputs,
-               *semantic_tree_const_inputs,
                const_input
            ], semantic_tree_output

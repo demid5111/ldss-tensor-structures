@@ -9,7 +9,7 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
     shape = (flattened_tree_num_elements + filler_len, 1)
     flattened_input = tf.keras.layers.Input(shape=(*shape,))
 
-    index_const_inputs, index_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
+    index_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
                                                                                 roles=dual_roles,
                                                                                 filler_len=filler_len,
                                                                                 max_depth=max_depth - 1,
@@ -18,7 +18,7 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
                                                                                 prefix='extracting_index')
     index_raw_output = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len,)))(index_raw_output)
 
-    alpha_const_inputs, alpha_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
+    alpha_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
                                                                                 roles=dual_roles,
                                                                                 filler_len=filler_len,
                                                                                 max_depth=max_depth - 1,
@@ -28,7 +28,7 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
     alpha_raw_output = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (filler_len,)))(alpha_raw_output)
 
     if model_2_tuple_has_weights:
-        weight_const_inputs, weight_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
+        weight_raw_output, _ = build_universal_extraction_branch(model_input=flattened_input,
                                                                                       roles=dual_roles,
                                                                                       filler_len=filler_len,
                                                                                       max_depth=max_depth - 1,
@@ -40,9 +40,6 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
 
         return tf.keras.Model(
             inputs=[
-                *index_const_inputs,
-                *alpha_const_inputs,
-                *weight_const_inputs,
                 flattened_input
             ],
             outputs=[
@@ -54,8 +51,6 @@ def build_decode_model_2_tuple_network(filler_len, dual_roles, max_depth, model_
 
     return tf.keras.Model(
         inputs=[
-            *index_const_inputs,
-            *alpha_const_inputs,
             flattened_input
         ],
         outputs=[

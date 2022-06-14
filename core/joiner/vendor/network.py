@@ -6,7 +6,7 @@ import scipy.sparse
 import tensorflow as tf
 
 from core.decoder.vendor.network import mat_transpose
-from core.utils import keras_constant_layer
+from core.utils import keras_constant_layer, create_constant
 
 
 def mat_mul(tensors):
@@ -28,10 +28,12 @@ def filler_input_subgraph(fillers_shapes, shift_layer):
     flatten_layers = [tf.keras.layers.Flatten()(input_layer) for input_layer in inputs_before_flattens]
     concat_layer = tf.keras.layers.concatenate(flatten_layers)
     transpose_layer = tf.keras.layers.Lambda(mat_transpose)(concat_layer)
-    return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul)([
-        shift_layer,
-        transpose_layer
-    ])
+
+    def mat_mul_with_constant(tensor):
+        constant = tf.keras.backend.constant(shift_layer, dtype='float32')
+        return tf.keras.backend.dot(constant, tensor)
+
+    return subtree_as_inputs, tf.keras.layers.Lambda(mat_mul_with_constant)(transpose_layer)
 
 
 def constant_input(role, filler_len, max_depth, name, matrix_creator):
@@ -73,12 +75,10 @@ def build_join_branch(roles, fillers_shapes):
     filler_len = fillers_shapes[0][1]
     max_depth = len(fillers_shapes)
 
-    constant_inputs = []
     variable_inputs = []
     matmul_layers = []
     for role_index, role in enumerate(roles):
-        shift_input = constant_input(role, filler_len, max_depth, f'constant_input_cons{role_index}_', shift_matrix)
-        constant_inputs.append(shift_input)
+        shift_input = create_constant(role, filler_len, max_depth, f'constant_input_cons{role_index}_', shift_matrix)
 
         inputs, matmul_layer = filler_input_subgraph(fillers_shapes, shift_input)
         variable_inputs.append(inputs)
@@ -87,7 +87,6 @@ def build_join_branch(roles, fillers_shapes):
     sum_layer = tf.keras.layers.Add()(matmul_layers)
 
     return (
-               tuple(constant_inputs),
                tuple(variable_inputs)
            ), sum_layer
 
@@ -105,10 +104,9 @@ def build_tree_joiner_network(roles, fillers_shapes):
     :param fillers_shapes:
     :return:
     """
-    inputs, output = build_join_branch(roles, fillers_shapes)
-    const_inputs, variable_inputs = inputs
+    variable_inputs, output = build_join_branch(roles, fillers_shapes)
 
-    model_inputs = [*const_inputs]
+    model_inputs = []
     for inputs_list in variable_inputs:
         model_inputs.extend(inputs_list)
 

@@ -16,7 +16,7 @@ def build_active_passive_network(roles, dual_roles, fillers, tree_shape):
                                          tree_shape=tree_shape,
                                          role_extraction_order=[1, 0, 0],
                                          stop_level=0)
-    classification_const_inputs, apnet_variable_input, classification_output, _ = branch
+    apnet_variable_input, classification_output, _ = branch
 
     scalar_mul = tf.keras.layers.Lambda(lambda tensors: tensors[0] * tensors[1])(
         [apnet_variable_input, classification_output])
@@ -43,7 +43,6 @@ def build_active_passive_network(roles, dual_roles, fillers, tree_shape):
     sum_branches = tf.keras.layers.Add()([passive_branch_output, active_branch_output])
     return tf.keras.Model(
         inputs=[
-            *classification_const_inputs,
             *passive_branch_const_inputs,
             *active_branch_const_inputs,
             const_neg_1,

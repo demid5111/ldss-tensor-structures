@@ -1,7 +1,7 @@
 import tensorflow as tf
 
-from core.joiner.vendor.network import constant_input, mat_mul
 from core.unshifter.vendor.network import unshift_matrix
+from core.utils import create_constant
 
 
 def normalization(x):
@@ -16,14 +16,12 @@ def build_one_level_extraction_branch(model_input, roles, filler_len, max_depth,
 
 def build_universal_extraction_branch(model_input, roles, filler_len, max_depth, stop_level, role_extraction_order,
                                       prefix=''):
-    shift_inputs = []
     current_input = model_input
     target_num_elements = 0
     for level_index, role_index in zip(range(max_depth, stop_level - 1, -1), role_extraction_order):
         _, flattened_num_elements = unshift_matrix(roles[role_index], filler_len, level_index).shape
         layer_name = 'constant_input_level_{}_(ex{})'.format(prefix + '_' if prefix else '', level_index, role_index)
-        left_shift_input = constant_input(roles[role_index], filler_len, level_index, layer_name, unshift_matrix)
-        shift_inputs.append(left_shift_input)
+        left_shift_input = create_constant(roles[role_index], filler_len, level_index, layer_name, unshift_matrix)
 
         current_num_elements = flattened_num_elements + filler_len
         target_num_elements = flattened_num_elements
@@ -35,11 +33,12 @@ def build_universal_extraction_branch(model_input, roles, filler_len, max_depth,
         current_input = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (target_num_elements, 1)))(
             clip_first_level)
 
-        current_input = tf.keras.layers.Lambda(mat_mul)([
-            left_shift_input,
-            current_input
-        ])
-    return shift_inputs, current_input, target_num_elements
+        def mat_mul_with_constant(tensor):
+            constant = tf.keras.backend.constant(left_shift_input, dtype='float32')
+            return tf.keras.backend.dot(constant, tensor)
+
+        current_input = tf.keras.layers.Lambda(mat_mul_with_constant)(current_input)
+    return current_input, target_num_elements
 
 
 def build_classification_branch(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
@@ -51,7 +50,7 @@ def build_classification_branch(roles, fillers, tree_shape, role_extraction_orde
     shape = (flattened_tree_num_elements + filler_len, 1)
     flattened_tree_input = tf.keras.layers.Input(shape=(*shape,))
 
-    extraction_inputs, extraction_output, _ = build_universal_extraction_branch(model_input=flattened_tree_input,
+    extraction_output, _ = build_universal_extraction_branch(model_input=flattened_tree_input,
                                                                                 roles=roles,
                                                                                 filler_len=filler_len,
                                                                                 max_depth=max_depth,
@@ -61,18 +60,17 @@ def build_classification_branch(roles, fillers, tree_shape, role_extraction_orde
         extraction_output)
     global_max_pool = tf.keras.layers.GlobalMaxPooling1D()(reshape_for_pool)
     normalizer = tf.keras.layers.Lambda(normalization)(global_max_pool)
-    return extraction_inputs, flattened_tree_input, normalizer, extraction_output
+    return flattened_tree_input, normalizer, extraction_output
 
 
 def build_filler_extractor_network(roles, fillers, tree_shape, role_extraction_order, stop_level=0):
-    const_inputs, variable_input, output, _ = build_classification_branch(roles=roles,
+    variable_input, output, _ = build_classification_branch(roles=roles,
                                                                           fillers=fillers,
                                                                           tree_shape=tree_shape,
                                                                           role_extraction_order=role_extraction_order,
                                                                           stop_level=stop_level)
     return tf.keras.Model(
         inputs=[
-            *const_inputs,
             variable_input,
         ],
         outputs=output)
@@ -86,7 +84,7 @@ def build_real_filler_extractor_network(roles, fillers, tree_shape, role_extract
     shape = (flattened_tree_num_elements + filler_len, 1)
     flattened_tree_input = tf.keras.layers.Input(shape=(*shape,), batch_size=1)
 
-    extraction_inputs, extraction_output, _ = build_universal_extraction_branch(model_input=flattened_tree_input,
+    extraction_output, _ = build_universal_extraction_branch(model_input=flattened_tree_input,
                                                                                 roles=roles,
                                                                                 filler_len=filler_len,
                                                                                 max_depth=max_depth,
@@ -94,7 +92,6 @@ def build_real_filler_extractor_network(roles, fillers, tree_shape, role_extract
                                                                                 role_extraction_order=role_extraction_order)
     return tf.keras.Model(
         inputs=[
-            *extraction_inputs,
             flattened_tree_input
         ],
         outputs=extraction_output)

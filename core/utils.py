@@ -20,3 +20,10 @@ def keras_constant_layer(np_constant, name, batch_size=1):
     np_constant = np_constant.reshape((batch_size, *np_constant.shape))
     tf_constant = tf.keras.backend.constant(np_constant, dtype='float32')
     return tf.keras.layers.Input(tensor=tf_constant, shape=np_constant.shape, dtype='float32', name=name)
+
+
+def create_constant(role, filler_len, max_depth, name, matrix_creator):
+    batch_size = 1
+    np_constant = matrix_creator(role, filler_len, max_depth, name)
+    np_constant = np_constant.reshape((batch_size, *np_constant.shape))
+    return np_constant

@@ -4,12 +4,13 @@ import tensorflow as tf
 from core.active_passive_net.classifier.vendor.network import build_one_level_extraction_branch
 from core.joiner.vendor.network import constant_input, mat_mul, shift_matrix
 from core.unshifter.vendor.network import unshift_matrix
-from core.utils import keras_constant_layer
+from core.utils import keras_constant_layer, create_constant
 
 
 def create_shift_matrix_as_input(role, role_index, filler_len, max_depth, prefix):
     left_shift_input_name = '{}constant_input_(cons{})'.format(prefix + '_' if prefix else '', role_index)
-    return constant_input(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
+    return create_constant(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
+    # return constant_input(role, filler_len, max_depth, left_shift_input_name, shift_matrix)
 
 
 # TODO: refactor and move to the joiner network
@@ -20,25 +21,23 @@ def build_join_branch(roles, filler_len, max_depth, inputs, prefix='', left_shif
     if right_shift_input is None:
         right_shift_input = create_shift_matrix_as_input(roles[1], 1, filler_len, max_depth, prefix)
 
-    left_matmul_layer = tf.keras.layers.Lambda(mat_mul)([
-        left_shift_input[0],
-        inputs[0][0]
-    ])
+    def mat_mul_with_constant_left(tensor):
+        constant = tf.keras.backend.constant(left_shift_input[0], dtype='float32')
+        return tf.keras.backend.dot(constant, tensor)
 
-    right_matmul_layer = tf.keras.layers.Lambda(mat_mul)([
-        right_shift_input[0],
-        inputs[1][0]
-    ])
+    def mat_mul_with_constant_right(tensor):
+        constant = tf.keras.backend.constant(right_shift_input[0], dtype='float32')
+        return tf.keras.backend.dot(constant, tensor)
+
+    left_matmul_layer = tf.keras.layers.Lambda(mat_mul_with_constant_left)(inputs[0][0])
+    right_matmul_layer = tf.keras.layers.Lambda(mat_mul_with_constant_right)(inputs[1][0])
 
     sum_layer = tf.keras.layers.Add()([
         left_matmul_layer,
         right_matmul_layer
     ])
 
-    return (
-               left_shift_input,
-               right_shift_input
-           ), sum_layer
+    return sum_layer
 
 
 def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_roles, filler_len, max_depth):
@@ -50,7 +49,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                                                     stop_level=stop_level_for_verb,
                                                     role_extraction_order=[1, 0, 1],
                                                     prefix='passive_verb_extract')
-    verb_extraction_const_inputs, verb_extraction_output, _ = verb_branch
+    verb_extraction_output, _ = verb_branch
 
     stop_level_for_agent = 0
     agent_branch = build_one_level_extraction_branch(model_input=input_layer,
@@ -60,7 +59,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                                                      stop_level=stop_level_for_agent,
                                                      role_extraction_order=[1, 1, 1],
                                                      prefix='passive_agent_extract')
-    agent_extraction_const_inputs, agent_extraction_output, _ = agent_branch
+    agent_extraction_output, _ = agent_branch
 
     stop_level_for_p = max_depth - 1
     p_branch = build_one_level_extraction_branch(model_input=input_layer,
@@ -71,7 +70,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                                                  role_extraction_order=[0],
                                                  prefix='passive_p_extract')
 
-    p_extraction_const_inputs, p_raw_output, current_num_elements = p_branch
+    p_raw_output, current_num_elements = p_branch
     _, flattened_num_elements = unshift_matrix(roles[0], filler_len, stop_level_for_p).shape
     # TODO: insert cropping here
     reshape_for_crop = tf.keras.layers.Lambda(
@@ -82,7 +81,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
 
     # TODO: define how to tackle extractions not till the bottom of structure
     # given that we have all fillers maximum joining depth is equal to 1
-    agentxr0_pxr1_const_inputs, agentxr0_pxr1_output = build_join_branch(roles=roles,
+    agentxr0_pxr1_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,
                                                                          max_depth=1,
                                                                          inputs=[
@@ -113,7 +112,7 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
     reshaped_agentxr0_pxr1 = tf.keras.layers.Lambda(lambda x: tf.keras.backend.reshape(x, (1, filler_len * 3, 1)))(
         concatenate_agentxr0_pxr1)
 
-    semantic_tree_const_inputs, semantic_tree_output = build_join_branch(roles=roles,
+    semantic_tree_output = build_join_branch(roles=roles,
                                                                          filler_len=filler_len,
                                                                          max_depth=2,
                                                                          inputs=[
@@ -122,10 +121,5 @@ def extract_semantic_tree_from_passive_voice_branch(input_layer, roles, dual_rol
                                                                          ],
                                                                          prefix='passive_join(verb, join(agent,p))')
     return [
-               *verb_extraction_const_inputs,
-               *agent_extraction_const_inputs,
-               *p_extraction_const_inputs,
-               *agentxr0_pxr1_const_inputs,
-               *semantic_tree_const_inputs,
                const_fake_extender
            ], semantic_tree_output

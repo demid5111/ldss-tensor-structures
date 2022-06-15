@@ -7,7 +7,7 @@ import tensorflow as tf
 from core.model_2_tuple import Model2Tuple, aggregate_model_tuples, encode_model_2_tuple, decode_model_2_tuple_tpr
 
 from demo.neurosymbolic_decision_making.copy_generator import pack_with_full_mta_encoding, single_tpr_len
-from demo.neurosymbolic_decision_making.copy_infer_mta import _generate_data, infer_model
+from demo.neurosymbolic_decision_making.copy_infer_mta import _generate_data, get_infer_routine
 from demo.neurosymbolic_decision_making.copy_task import MTATask
 
 
@@ -61,33 +61,45 @@ def symbolic_aggregation(assessments, linguistic_scale_size):
 
 def subsymbolic_aggregation(assessments, linguistic_scale_size):
     tf.compat.v1.disable_eager_execution()
-    num_experts = 2  # limitation of the model
-    mta_encoding = MTATask.MTAEncodingType.full_no_weights
+    aggregator_num_experts = 2  # limitation of the model
+    aggregator_expected_encoding = MTATask.MTAEncodingType.full_no_weights
     has_weights = False
 
     models_dir = Path(__file__).parent / 'models'
-    mta_model_path = models_dir / 'mta_48_bits_frozen.pb'
+    aggregator_model_path = models_dir / 'mta_48_bits_frozen.pb'
 
     encoder, decoder = load_encoder_decoder_models(encoder_path=models_dir / 'encoder.savedmodel',
                                                    decoder_path=models_dir / 'decoder.savedmodel')
 
-    subsym_start = time.perf_counter()
+    aggregator_infer = get_infer_routine(aggregator_model_path)
+
+    (seq_len, inputs, _), _ = _generate_data(aggregator_expected_encoding,
+                                                               aggregator_num_experts,
+                                                               linguistic_scale_size)
+    bits_per_number = single_tpr_len(linguistic_scale_size)
 
     print('Step 2. Process assessments (translate to the distributed form if needed)')
 
-    (seq_len, inputs, labels), data_generator = _generate_data(mta_encoding, num_experts, linguistic_scale_size)
-    raw_dataset = [
-        [assessments, aggregate_model_tuples(assessments, linguistic_scale_size)]
-    ]
-    bits_per_number = single_tpr_len(linguistic_scale_size)
-    _, _ = pack_with_full_mta_encoding(raw_dataset, bits_per_number, inputs, encoder)
+    subsym_start = time.perf_counter()
 
-    print('Step 3. Aggregate assessments (symbolic-/sub-symbolically)')
-    print('\tsub-symbolically')
-    outputs = infer_model(mta_model_path, inputs=inputs, seq_len=seq_len)
+    assert aggregator_num_experts == 2, 'Pre-trained model can work with only two assessments at once'
+
+    accumulated_assessment = assessments[0]  # this is a seed of our hand-made reduce
+    for assessment in assessments[1:]:
+        pair = [accumulated_assessment, assessment]
+
+        raw_dataset = [
+            [pair, Model2Tuple(term_index=0, alpha=0)]  # we do not care here about expected result
+        ]
+        _, _ = pack_with_full_mta_encoding(raw_dataset, bits_per_number, inputs, encoder)
+
+        print('Step 3. Aggregate assessments (symbolic-/sub-symbolically)')
+        print('\tsub-symbolically')
+        outputs = aggregator_infer(inputs=inputs, seq_len=seq_len)
+        accumulated_assessment = outputs[0][:, 0]
 
     print('Step 4. Process assessments (translate from the distributed form if needed)')
-    res_assessment, _ = decode_model_2_tuple_tpr(outputs[0][:, 0],
+    res_assessment, _ = decode_model_2_tuple_tpr(accumulated_assessment,
                                                  decoder=decoder,
                                                  model_2_tuple_has_weights=has_weights)
 
@@ -100,8 +112,11 @@ def subsymbolic_aggregation(assessments, linguistic_scale_size):
 def main():
     is_symbolic = True
     is_subsymbolic = True
-    num_assessments = 2
+    num_assessments = 5
     linguistic_scale_size = 5
+
+    # path_to_task = TASKS_ROOT / '1_aircraft' / 'task.json'
+    # task = TaskModelFactory().from_json(path_to_task)
 
     print('Step 1. Obtain assessments (read or generate)')
     print('\tGenerating assessments...')

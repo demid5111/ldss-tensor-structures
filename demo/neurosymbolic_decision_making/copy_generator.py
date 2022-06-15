@@ -169,11 +169,20 @@ def pack_with_full_mta_encoding(raw_dataset, bits_per_number, example_input, enc
     batch_result_tuples = []
     for tuples, mta_result_tuple in raw_dataset:
         # 3. encode the tuples
-        encoded_tuples = [encode_model_2_tuple(i, encoder=encoder)[0] for i in tuples]
-        flattened_encoded_tuples = [flattenize_per_tensor_representation(i) for i in encoded_tuples]
-        encoded_mta_result_tuple = encode_model_2_tuple(mta_result_tuple, encoder=encoder)[0]
-        flattened_encoded_mta_result_tuple = flattenize_per_tensor_representation(encoded_mta_result_tuple)
-        print(f'TPR flattened shape is: {flattened_encoded_mta_result_tuple.shape}')
+        flattened_encoded_tuples = []
+        for i in tuples:
+            if isinstance(i, Model2Tuple):
+                encoded_tuple = encode_model_2_tuple(i, encoder=encoder)[0]
+                flattened_encoded = flattenize_per_tensor_representation(encoded_tuple)
+            else:  # it is already encoded
+                flattened_encoded = i
+            flattened_encoded_tuples.append(flattened_encoded)
+
+        if isinstance(mta_result_tuple, Model2Tuple):
+            encoded_mta_result_tuple = encode_model_2_tuple(mta_result_tuple, encoder=encoder)[0]
+            flattened_encoded_mta_result_tuple = flattenize_per_tensor_representation(encoded_mta_result_tuple)
+        else:
+            raise ValueError(f'expected to receive instance of 2-tuple. got {type(mta_result_tuple[0])} instead')
 
         batch_tuples.append(flattened_encoded_tuples)
         batch_result_tuples.append(flattened_encoded_mta_result_tuple)

@@ -2,8 +2,8 @@ from pathlib import Path
 
 import tensorflow as tf
 
-from demo.neurosymbolic_decision_making.copy_generator import MTATaskData
-from demo.neurosymbolic_decision_making.copy_task import MTATask
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.generator import MTATaskData
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.task import MTATask
 
 
 def _generate_data(mta_encoding, num_experts, scale_size):

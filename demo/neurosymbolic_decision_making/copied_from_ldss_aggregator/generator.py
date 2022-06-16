@@ -14,7 +14,7 @@ from core.utils import flattenize_per_tensor_representation
 
 import logging as logger
 
-from demo.neurosymbolic_decision_making.copy_task import MTATask
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.task import MTATask
 
 
 def new_empty_placeholder(numbers_quantity, batch_size, bits_per_number, bits_per_vector):

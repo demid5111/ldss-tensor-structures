@@ -6,9 +6,10 @@ import tensorflow as tf
 
 from core.model_2_tuple import Model2Tuple, aggregate_model_tuples, encode_model_2_tuple, decode_model_2_tuple_tpr
 
-from demo.neurosymbolic_decision_making.copy_generator import pack_with_full_mta_encoding, single_tpr_len
-from demo.neurosymbolic_decision_making.copy_infer_mta import _generate_data, get_infer_routine
-from demo.neurosymbolic_decision_making.copy_task import MTATask
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.generator import pack_with_full_mta_encoding, single_tpr_len
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.infer_mta import _generate_data, get_infer_routine
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.task import MTATask
+from demo.neurosymbolic_decision_making.copied_from_ldss_benchmark.task_model import TaskModelFactory
 
 
 def generate_assessments(num_assessments, linguistic_scale_size):
@@ -115,8 +116,8 @@ def main():
     num_assessments = 5
     linguistic_scale_size = 5
 
-    # path_to_task = TASKS_ROOT / '1_aircraft' / 'task.json'
-    # task = TaskModelFactory().from_json(path_to_task)
+    path_to_task = Path(__file__).parent / 'models' / 'description_multilevel.json'
+    task = TaskModelFactory().from_json(path_to_task)
 
     print('Step 1. Obtain assessments (read or generate)')
     print('\tGenerating assessments...')

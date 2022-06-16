@@ -1,15 +1,25 @@
 import random
 import time
 from pathlib import Path
+from typing import Optional
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 import tensorflow as tf
 
+tf.get_logger().setLevel('ERROR')
+from tap import Tap
+
 from core.model_2_tuple import Model2Tuple, aggregate_model_tuples, encode_model_2_tuple, decode_model_2_tuple_tpr
 
-from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.generator import pack_with_full_mta_encoding, single_tpr_len
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.generator import pack_with_full_mta_encoding, \
+    single_tpr_len
 from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.infer_mta import _generate_data, get_infer_routine
 from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.task import MTATask
-from demo.neurosymbolic_decision_making.copied_from_ldss_benchmark.task_model import TaskModelFactory
+from demo.neurosymbolic_decision_making.copied_from_ldss_benchmark.schemas.task_scheme import \
+    AlternativeAssessmentDescription, AlternativeAssessmentForSingleCriteriaDescription, ScalesDescription
+from demo.neurosymbolic_decision_making.copied_from_ldss_benchmark.task_model import TaskModelFactory, TaskModel
 
 
 def generate_assessments(num_assessments, linguistic_scale_size):
@@ -22,6 +32,36 @@ def generate_assessments(num_assessments, linguistic_scale_size):
                                  linguistic_scale_size=linguistic_scale_size)
         assessments.append(assessment)
     return assessments
+
+
+def load_assessments(task_description_path: Path, num_assessments: int, linguistic_scale_size: int):
+    task: TaskModel = TaskModelFactory().from_json(task_description_path)
+
+    linguistic_scale: Optional[ScalesDescription] = None
+    for scale in task._dto.scales:
+        scale: ScalesDescription
+
+        if len(scale.labels) == linguistic_scale_size and scale.values is None:
+            linguistic_scale = scale
+            break
+
+    all_matching_assessments = []
+    for expert_id, expert_assessments in task._dto.estimations.items():
+        for alternative_assessment in expert_assessments:
+            alternative_assessment: AlternativeAssessmentDescription
+
+            for assessment in alternative_assessment.criteria2Estimation:
+                assessment: AlternativeAssessmentForSingleCriteriaDescription
+
+                if assessment.scaleID != linguistic_scale.scaleID:
+                    continue
+                label = assessment.estimation[0]
+                position = linguistic_scale.labels.index(label)
+                all_matching_assessments.append(Model2Tuple(term_index=position,
+                                                            alpha=0.,
+                                                            linguistic_scale_size=linguistic_scale_size))
+
+    return all_matching_assessments[:num_assessments]
 
 
 def load_encoder_decoder_models(encoder_path, decoder_path, has_weights=False):
@@ -75,8 +115,8 @@ def subsymbolic_aggregation(assessments, linguistic_scale_size):
     aggregator_infer = get_infer_routine(aggregator_model_path)
 
     (seq_len, inputs, _), _ = _generate_data(aggregator_expected_encoding,
-                                                               aggregator_num_experts,
-                                                               linguistic_scale_size)
+                                             aggregator_num_experts,
+                                             linguistic_scale_size)
     bits_per_number = single_tpr_len(linguistic_scale_size)
 
     print('Step 2. Process assessments (translate to the distributed form if needed)')
@@ -110,38 +150,48 @@ def subsymbolic_aggregation(assessments, linguistic_scale_size):
     return res_assessment, time.perf_counter() - subsym_start
 
 
-def main():
-    is_symbolic = True
-    is_subsymbolic = True
-    num_assessments = 5
-    linguistic_scale_size = 5
+class SimpleArgumentParser(Tap):
+    is_symbolic: bool = True
+    is_subsymbolic: bool = True
+    task_description: str = None
+    num_assessments: int = 2
+    linguistic_scale_size: int = 5
 
-    path_to_task = Path(__file__).parent / 'models' / 'description_multilevel.json'
-    task = TaskModelFactory().from_json(path_to_task)
+
+def main(args: SimpleArgumentParser):
+    assert args.linguistic_scale_size == 5, 'Fuzzy assessments from scales other than of granularity of 5 are ' \
+                                            'not supported'
 
     print('Step 1. Obtain assessments (read or generate)')
-    print('\tGenerating assessments...')
-    assessments = generate_assessments(num_assessments, linguistic_scale_size)
+    if args.task_description is None:
+        print('\tGenerating assessments...')
+        assessments = generate_assessments(args.num_assessments, args.linguistic_scale_size)
+    else:
+        print('\tLoading assessments...')
+        assessments = load_assessments(Path(args.task_description), args.num_assessments, args.linguistic_scale_size)
+
     print(f'\tAssessments: {", ".join([str(i) for i in assessments])}')
 
-    if is_symbolic:
+    if args.is_symbolic:
         sym_start = time.perf_counter()
-        symbolic_res = symbolic_aggregation(assessments, linguistic_scale_size)
+        symbolic_res = symbolic_aggregation(assessments, args.linguistic_scale_size)
         sym_total = time.perf_counter() - sym_start
-    if is_subsymbolic:
-        subsymbolic_res, subsym_total = subsymbolic_aggregation(assessments, linguistic_scale_size)
-
-    decision = 'results are ' + ('equal' if subsymbolic_res == symbolic_res else 'not equal')
-    delta = f'{subsym_total/sym_total:.6}x'
+    if args.is_subsymbolic:
+        subsymbolic_res, subsym_total = subsymbolic_aggregation(assessments, args.linguistic_scale_size)
 
     print('Report:')
-    print(f'\t{"Symbolic result:":<30}{str(symbolic_res):>30}')
-    print(f'\t{"Symbolic time:":<30}{sym_total:>30}')
-    print(f'\t{"Subsymbolic result:":<30}{str(subsymbolic_res):>30}')
-    print(f'\t{"Subsymbolic time:":<30}{subsym_total:>30}')
-    print(f'\t{"Decision:":<30}{decision:>30}')
-    print(f'\t{"Symbolic is faster in:":<30}{delta:>30}')
+    if args.is_symbolic:
+        print(f'\t{"Symbolic result:":<30}{str(symbolic_res):>30}')
+        print(f'\t{"Symbolic time:":<30}{sym_total:>30}')
+    if args.is_subsymbolic:
+        print(f'\t{"Subsymbolic result:":<30}{str(subsymbolic_res):>30}')
+        print(f'\t{"Subsymbolic time:":<30}{subsym_total:>30}')
+    if args.is_symbolic and args.is_subsymbolic:
+        decision = 'results are ' + ('equal' if subsymbolic_res == symbolic_res else 'not equal')
+        delta = f'{subsym_total / sym_total:.6}x'
+        print(f'\t{"Decision:":<30}{decision:>30}')
+        print(f'\t{"Symbolic is faster in:":<30}{delta:>30}')
 
 
 if __name__ == '__main__':
-    main()
+    main(SimpleArgumentParser().parse_args())

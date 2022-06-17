@@ -2,8 +2,8 @@ from pathlib import Path
 
 import tensorflow as tf
 
-from demo.neurosymbolic_decision_making.copy_generator import MTATaskData
-from demo.neurosymbolic_decision_making.copy_task import MTATask
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.generator import MTATaskData
+from demo.neurosymbolic_decision_making.copied_from_ldss_aggregator.task import MTATask
 
 
 def _generate_data(mta_encoding, num_experts, scale_size):
@@ -64,11 +64,14 @@ def prepare_graph_for_inference(model_path: Path, prefix: str = ''):
     ), y
 
 
-def infer_model(model_path: Path, inputs, seq_len):
+def get_infer_routine(model_path: Path):
     graph, (inputs_placeholder, seq_len_placeholder), y = prepare_graph_for_inference(model_path, prefix='prefix')
-    with tf.compat.v1.Session(graph=graph) as sess:
-        outputs = sess.run(y, feed_dict={
-            inputs_placeholder: inputs,
-            seq_len_placeholder: seq_len
-        })
-    return outputs
+
+    def internal(inputs, seq_len):
+        with tf.compat.v1.Session(graph=graph) as sess:
+            outputs = sess.run(y, feed_dict={
+                inputs_placeholder: inputs,
+                seq_len_placeholder: seq_len
+            })
+        return outputs
+    return internal
